@@ -1,67 +1,67 @@
 @echo off
-chcp 65001 >nul
+setlocal EnableDelayedExpansion
 title NoteForge AI - Unified One-Click Launcher
 color 0B
 
 echo ===============================================================================
-echo                ⚡ NOTETRACK & NOTETEXT - NOTETFORGE AI PLATFORM ⚡
-echo          RAG Study & Document Conversion Platform (Hybrid Microservices)
+echo                NOTETRACK and NOTETEXT - NOTETFORGE AI PLATFORM
+echo          RAG Study and Document Conversion Platform [Hybrid Microservices]
 echo ===============================================================================
 echo.
 
-:: 1. Check Root Directory
+REM 1. Set Root Directory
 set "ROOT_DIR=%~dp0"
 cd /d "%ROOT_DIR%"
 
-:: 2. Check System Prerequisites
-echo [*] [1/5] Đang kiểm tra môi trường hệ thống (PHP, Composer, Python, Node, MySQL)...
+REM 2. Check System Prerequisites
+echo [*] [1/5] Kiem tra moi truong he thong: PHP, Composer, Python, Node, MySQL...
 
 where php >nul 2>nul
 if %ERRORLEVEL% neq 0 (
-    echo [ERROR] Không tìm thấy PHP trên máy tính hoặc chưa thêm vào System PATH.
-    echo Vui lòng cài đặt PHP (XAMPP / Laragon / PHP 8.2+) trước khi tiếp tục.
+    echo [ERROR] Khong tim thay PHP tren he thong hoac chua them vao PATH.
+    echo Vui long bat XAMPP hoac cai dat PHP 8.2+ truoc khi tiep tuc.
     pause
     exit /b 1
 )
 
 where composer >nul 2>nul
 if %ERRORLEVEL% neq 0 (
-    echo [WARNING] Chưa tìm thấy Composer trên PATH. Hãy đảm bảo Composer đã được cài đặt.
+    echo [WARNING] Chua tim thay Composer tren PATH.
 )
 
 where python >nul 2>nul
 if %ERRORLEVEL% neq 0 (
-    echo [ERROR] Không tìm thấy Python trên máy tính hoặc chưa thêm vào System PATH.
+    echo [ERROR] Khong tim thay Python tren he thong hoac chua them vao PATH.
     pause
     exit /b 1
 )
 
 where npm >nul 2>nul
 if %ERRORLEVEL% neq 0 (
-    echo [ERROR] Không tìm thấy Node.js / npm trên máy tính.
+    echo [ERROR] Khong tim thay Node.js / npm tren he thong.
     pause
     exit /b 1
 )
 
-echo [OK] Môi trường PHP, Python, Node.js đã sẵn sàng!
+echo [OK] Moi truong PHP, Python, Node.js da san sang!
 echo.
 
-:: 3. Database Initialization & Auto Sync
-echo [*] [2/5] Đang khởi tạo và đồng bộ Cơ sở dữ liệu MySQL (noteforge_db)...
+REM 3. Database Initialization and Auto Sync
+echo [*] [2/5] Kiem tra va dong bo Co so du lieu MySQL [noteforge_db]...
 where mysql >nul 2>nul
 if %ERRORLEVEL% equ 0 (
     mysql -u root -e "CREATE DATABASE IF NOT EXISTS noteforge_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>nul
     mysql -u root noteforge_db < "%ROOT_DIR%database.sql" 2>nul
-    echo [OK] Đã kiểm tra & đồng bộ CSDL noteforge_db từ database.sql!
+    echo [OK] Da kiem tra va dong bo CSDL noteforge_db tu database.sql!
 ) else (
-    echo [INFO] mysql CLI không có trên PATH, sẽ sử dụng Laravel Migration để khởi tạo bảng...
+    echo [INFO] mysql CLI khong co tren PATH, se su dung Laravel Migration...
 )
 
-:: 4. Backend Dependencies & Migration Check
-echo [*] [3/5] Đang kiểm tra và khởi tạo Backend Laravel 11...
+REM 4. Backend Dependencies and Migration
+echo [*] [3/5] Kiem tra va khoi tao Backend Laravel 11...
 cd /d "%ROOT_DIR%backend-laravel"
 if not exist "vendor" (
-    echo [*] Thư mục vendor chưa có, đang chạy 'composer install'...
+    echo [*] Thu muc vendor chua co, dang chay composer install...
     call composer install --no-interaction --prefer-dist
 )
 if not exist ".env" (
@@ -69,71 +69,73 @@ if not exist ".env" (
     call php artisan key:generate
 )
 call php artisan migrate --force >nul 2>nul
-echo [OK] Laravel Backend đã sẵn sàng!
+echo [OK] Laravel Backend da san sang!
 echo.
 
-:: 5. Python AI Engine Dependencies
-echo [*] [4/5] Đang kiểm tra Python AI & Document Microservice...
+REM 5. Python AI Engine Dependencies
+echo [*] [4/5] Kiem tra Python AI and Document Microservice...
 cd /d "%ROOT_DIR%ai-service-python"
 if not exist ".env" (
     copy .env.example .env >nul
 )
 if not exist "venv" (
-    echo [*] Đang khởi tạo Python Virtual Environment...
+    echo [*] Dang tao Python Virtual Environment...
     python -m venv venv
 )
-call .\venv\Scripts\activate
-pip install -r requirements.txt --quiet >nul 2>nul
-call deactivate
-echo [OK] Python AI Microservice đã sẵn sàng!
+if exist "venv\Scripts\activate.bat" (
+    call venv\Scripts\activate.bat
+    pip install -r requirements.txt --quiet >nul 2>nul
+    call deactivate
+)
+echo [OK] Python AI Microservice da san sang!
 echo.
 
-:: 6. Frontend Vue 3 Dependencies
-echo [*] [5/5] Đang kiểm tra Frontend Vue 3 SPA...
+REM 6. Frontend Vue 3 Dependencies
+echo [*] [5/5] Kiem tra Frontend Vue 3 SPA...
 cd /d "%ROOT_DIR%frontend-vue"
 if not exist ".env" (
     copy .env.example .env >nul
 )
 if not exist "node_modules" (
-    echo [*] Đang cài đặt thư viện frontend qua npm install...
+    echo [*] Dang cai dat thu vien frontend qua npm install...
     call npm install --silent >nul 2>nul
 )
-echo [OK] Frontend Vue 3 đã sẵn sàng!
+echo [OK] Frontend Vue 3 da san sang!
 echo.
 
-:: ===============================================================================
-:: 7. Khởi chạy đồng thời 4 tiến trình độc lập
-:: ===============================================================================
+REM ===============================================================================
+REM 7. Launch All 4 Services Concurrently
+REM ===============================================================================
 echo ===============================================================================
-echo  🚀 ĐANG KHỞI CHẠY TẤT CẢ CÁC PHÂN HỆ HỆ THỐNG:
-echo  1. Python AI Service:     http://localhost:8001 (FastAPI + RAG + FFmpeg)
-echo  2. Laravel Queue Worker:  Database Driver (Xử lý tác vụ nền & OTP)
-echo  3. Laravel API Backend:   http://localhost:8000 (Sanctum + MySQL Gateway)
-echo  4. Vue 3 Frontend SPA:    http://localhost:5173 (Host 0.0.0.0 PC + Mobile LAN)
+echo   DANG KHOI CHAY TAT CA CAC PHAN HE HE THONG:
+echo   1. Python AI Service:     http://localhost:8001 [FastAPI + RAG + FFmpeg]
+echo   2. Laravel Queue Worker:  Database Driver [Xu ly tac vu nen va OTP]
+echo   3. Laravel API Backend:   http://localhost:8000 [Sanctum + MySQL Gateway]
+echo   4. Vue 3 Frontend SPA:    http://localhost:5173 [Host 0.0.0.0 PC + Mobile LAN]
 echo ===============================================================================
 
-:: 1. Launch Python AI Service (Port 8001)
-start "NoteForge - Python AI Service [8001]" cmd /k "color 0A && cd /d "%ROOT_DIR%ai-service-python" && if exist venv\Scripts\activate (call venv\Scripts\activate) && uvicorn main:app --host 0.0.0.0 --port 8001 --reload"
+REM 1. Launch Python AI Service
+start "NoteForge - Python AI [8001]" /D "%ROOT_DIR%ai-service-python" cmd /k "color 0A & if exist venv\Scripts\activate.bat (call venv\Scripts\activate.bat) & uvicorn main:app --host 0.0.0.0 --port 8001 --reload"
 
-:: 2. Launch Laravel Queue Worker
-start "NoteForge - Laravel Queue Worker" cmd /k "color 0E && cd /d "%ROOT_DIR%backend-laravel" && php artisan queue:work --tries=3"
+REM 2. Launch Laravel Queue Worker
+start "NoteForge - Laravel Queue Worker" /D "%ROOT_DIR%backend-laravel" cmd /k "color 0E & php artisan queue:work --tries=3"
 
-:: 3. Launch Laravel Backend (Port 8000)
-start "NoteForge - Laravel Backend Core [8000]" cmd /k "color 0B && cd /d "%ROOT_DIR%backend-laravel" && php artisan serve --host=0.0.0.0 --port=8000"
+REM 3. Launch Laravel Backend Core
+start "NoteForge - Laravel Backend [8000]" /D "%ROOT_DIR%backend-laravel" cmd /k "color 0B & php artisan serve --host 0.0.0.0 --port 8000"
 
-:: 4. Launch Vue 3 Frontend (Port 5173 with host enabled for Mobile LAN testing)
-start "NoteForge - Vue 3 Frontend SPA [5173]" cmd /k "color 0D && cd /d "%ROOT_DIR%frontend-vue" && npm run dev -- --host 0.0.0.0 --port 5173"
+REM 4. Launch Vue 3 Frontend SPA
+start "NoteForge - Vue 3 Frontend [5173]" /D "%ROOT_DIR%frontend-vue" cmd /k "color 0D & npm run dev -- --host 0.0.0.0 --port 5173"
 
-:: Wait 3 seconds and open browser
-timeout /t 3 /nobreak >nul
+REM Wait 3 seconds and open browser
+ping 127.0.0.1 -n 4 >nul
 echo.
-echo [*] Đang mở trình duyệt web tới http://localhost:5173 ...
+echo [*] Dang mo trinh duyet web tai http://localhost:5173 ...
 start http://localhost:5173
 
 echo.
 echo ===============================================================================
-echo  ✅ HỆ THỐNG ĐÃ HOẠT ĐỘNG HOÀN TOÀN!
-echo  - Để test trên điện thoại thật: Kết nối cùng Wi-Fi và truy cập http://[IP_LAN]:5173
-echo  - Để dừng hệ thống: Đóng 4 cửa sổ command prompt tương ứng.
+echo   HE THONG DA HOAT DONG HOAN TOAN!
+echo   - Truy cap tren may tinh: http://localhost:5173
+echo   - De dung he thong: Dong cac cua so console tuong ung.
 echo ===============================================================================
 exit /b 0
