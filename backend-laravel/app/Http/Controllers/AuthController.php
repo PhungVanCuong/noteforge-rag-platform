@@ -251,13 +251,13 @@ class AuthController extends Controller
                 ]);
             }
 
-            $token = $user->createToken('auth_token')->plainTextToken;
-            $frontendUrl = env('FRONTEND_URL', 'http://localhost:3000');
+            $token = $user->createToken('spa')->plainTextToken;
+            $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
 
             return redirect("{$frontendUrl}/auth/callback?token={$token}&name=" . urlencode($user->name));
         } catch (\Exception $e) {
             Log::error('Google OAuth callback error: ' . $e->getMessage());
-            $frontendUrl = env('FRONTEND_URL', 'http://localhost:3000');
+            $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
             return redirect("{$frontendUrl}/login?error=" . urlencode('Đăng nhập Google thất bại'));
         }
     }

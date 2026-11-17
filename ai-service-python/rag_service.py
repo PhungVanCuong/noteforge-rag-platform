@@ -36,14 +36,17 @@ class RagService:
             path=config.CHROMA_PERSIST_DIR,
             settings=Settings(anonymized_telemetry=False)
         )
-        self.collection = self.chroma_client.get_or_create_collection(
-            name="noteforge_rag",
-            metadata={"hnsw:space": "cosine"}
-        )
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=config.CHUNK_SIZE,
             chunk_overlap=config.CHUNK_OVERLAP,
             separators=["\n\n", "\n", ". ", " ", ""]
+        )
+
+    def get_collection(self, notebook_id: int):
+        """Retrieve isolated ChromaDB collection for the given notebook_id."""
+        return self.chroma_client.get_or_create_collection(
+            name=f"notebook_{notebook_id}",
+            metadata={"hnsw:space": "cosine"}
         )
 
     def extract_text_with_metadata(
@@ -226,8 +229,9 @@ class RagService:
         # Compute embeddings in batches
         embeddings = self.get_embeddings_batch(all_chunks, api_key=api_key)
 
-        # Upsert into ChromaDB
-        self.collection.upsert(
+        # Upsert into isolated ChromaDB collection for this notebook
+        collection = self.get_collection(notebook_id)
+        collection.upsert(
             ids=all_ids,
             embeddings=embeddings,
             documents=all_chunks,
@@ -241,11 +245,25 @@ class RagService:
             "total_pages": len(pages)
         }
 
-    def delete_document(self, document_id: int):
+    def delete_document(self, document_id: int, notebook_id: Optional[int] = None):
         """Remove all chunks associated with a document_id."""
-        self.collection.delete(
-            where={"document_id": str(document_id)}
-        )
+        if notebook_id:
+            try:
+                coll = self.get_collection(notebook_id)
+                coll.delete(where={"document_id": str(document_id)})
+            except Exception:
+                pass
+        else:
+            # Delete across all collections in ChromaDB
+            try:
+                collections = self.chroma_client.list_collections()
+                for c in collections:
+                    try:
+                        c.delete(where={"document_id": str(document_id)})
+                    except Exception:
+                        pass
+            except Exception:
+                pass
 
     def query_rag(
         self,
@@ -273,11 +291,11 @@ class RagService:
         )
         query_embedding = q_emb_resp['embedding']
 
-        # 2. Query ChromaDB with notebook_id filter
-        results = self.collection.query(
+        # 2. Query isolated ChromaDB collection for this notebook
+        collection = self.get_collection(notebook_id)
+        results = collection.query(
             query_embeddings=[query_embedding],
-            n_results=top_k,
-            where={"notebook_id": str(notebook_id)}
+            n_results=top_k
         )
 
         retrieved_chunks = []

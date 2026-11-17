@@ -322,11 +322,40 @@
 
         <!-- Transcript Preview Box -->
         <div v-if="transcriptionResult" class="mt-8 pt-6 border-t border-blueprint-paperBorder">
-          <h4 class="font-bold text-sm text-blueprint-dark mb-3 flex items-center gap-2">
-            <span>📝</span> Kết quả bóc băng có mốc thời gian:
-          </h4>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+            <h4 class="font-bold text-sm text-blueprint-dark flex items-center gap-2">
+              <span>📝</span> Kết quả bóc băng có mốc thời gian:
+            </h4>
+            <div class="flex items-center gap-2">
+              <button
+                @click="showSaveToRagModal = true"
+                class="px-3.5 py-1.5 rounded-lg bg-blueprint hover:bg-blueprint-light text-white text-xs font-bold flex items-center gap-1.5 shadow"
+              >
+                <span>➕</span> Đưa thẳng vào Môn học RAG
+              </button>
+            </div>
+          </div>
           <div class="bg-white p-5 rounded-xl border border-gray-200 font-mono text-xs text-gray-800 leading-relaxed whitespace-pre-wrap max-h-96 overflow-y-auto">
             {{ transcriptionResult }}
+          </div>
+        </div>
+
+        <!-- Modal Select Notebook to Ingest Transcript -->
+        <div v-if="showSaveToRagModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div class="blueprint-card max-w-md w-full p-6 shadow-2xl">
+            <h3 class="text-sm font-bold text-blueprint-dark mb-2">Đưa Bài Giảng Vào Môn Học RAG</h3>
+            <p class="text-xs text-gray-600 mb-4">Chọn không gian môn học để lưu nội dung bài giảng này thành tài liệu ôn thi:</p>
+            <select v-model="targetNotebookId" class="w-full p-2.5 border rounded-lg text-xs bg-white mb-4">
+              <option v-for="nb in notebookStore.notebooks" :key="nb.id" :value="nb.id">
+                {{ nb.title }} ({{ nb.subject_code || 'Không mã' }})
+              </option>
+            </select>
+            <div class="flex justify-end gap-2">
+              <button @click="showSaveToRagModal = false" class="px-3 py-1.5 border rounded text-xs text-gray-600">Hủy</button>
+              <button @click="saveTranscriptToNotebook" :disabled="!targetNotebookId || savingToRag" class="px-4 py-1.5 bg-blueprint text-white font-bold text-xs rounded disabled:opacity-50">
+                {{ savingToRag ? 'Đang nạp vào RAG...' : 'Lưu & Lập chỉ mục' }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -335,10 +364,39 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useConverterStore } from '@/stores/converter'
+import { useNotebookStore } from '@/stores/notebook'
 
 const converterStore = useConverterStore()
+const notebookStore = useNotebookStore()
+
+const showSaveToRagModal = ref(false)
+const targetNotebookId = ref(null)
+const savingToRag = ref(false)
+
+onMounted(async () => {
+  await notebookStore.fetchNotebooks()
+  if (notebookStore.notebooks.length > 0) {
+    targetNotebookId.value = notebookStore.notebooks[0].id
+  }
+})
+
+const saveTranscriptToNotebook = async () => {
+  if (!targetNotebookId.value || !transcriptionResult.value) return
+  savingToRag.value = true
+  try {
+    const blob = new Blob([transcriptionResult.value], { type: 'text/plain;charset=utf-8' })
+    const file = new File([blob], `Bai_giang_${new Date().toISOString().slice(0, 10)}.txt`, { type: 'text/plain' })
+    await notebookStore.uploadDocument(targetNotebookId.value, file)
+    showSaveToRagModal.value = false
+    alert('Đã đưa bài giảng vào không gian môn học và lập chỉ mục Vector RAG thành công!')
+  } catch (err) {
+    alert('Lưu vào RAG thất bại.')
+  } finally {
+    savingToRag.value = false
+  }
+}
 
 const tabs = [
   { id: 'office', label: 'Tài liệu văn phòng', icon: '📄' },

@@ -1,50 +1,82 @@
 <template>
-  <div class="h-[calc(100vh-64px)] flex flex-col bg-slate-950 overflow-hidden">
-    <!-- Workspace Top Header -->
-    <div class="bg-blueprint-dark border-b border-blueprint-paperBorder/30 px-4 py-2.5 flex items-center justify-between text-white shrink-0">
-      <div class="flex items-center gap-3">
-        <router-link to="/dashboard" class="text-xs text-gray-300 hover:text-white flex items-center gap-1 font-mono">
-          ◀ <span>Môn học</span>
+  <div class="h-[calc(100vh-64px)] flex flex-col bg-slate-950 overflow-hidden pb-14 md:pb-0">
+    <!-- Workspace Top Header Bar -->
+    <div class="bg-blueprint-dark border-b border-blueprint-paperBorder/30 px-3 sm:px-4 py-2.5 flex items-center justify-between text-white shrink-0">
+      <div class="flex items-center gap-2 truncate">
+        <router-link to="/dashboard" class="text-xs text-gray-300 hover:text-white flex items-center gap-1 font-mono shrink-0">
+          ◀ <span class="hidden sm:inline">Môn học</span>
         </router-link>
         <span class="text-gray-500">|</span>
-        <div class="flex items-center gap-2">
-          <span v-if="notebook?.subject_code" class="px-2 py-0.5 rounded bg-blue-900/80 text-blue-200 font-mono text-[11px] font-bold">
+        <div class="flex items-center gap-2 truncate">
+          <span v-if="notebook?.subject_code" class="px-2 py-0.5 rounded bg-blue-900/80 text-blue-200 font-mono text-[10px] sm:text-[11px] font-bold shrink-0">
             {{ notebook.subject_code }}
           </span>
-          <h1 class="text-sm font-bold text-white truncate max-w-xs sm:max-w-md">{{ notebook?.title }}</h1>
+          <h1 class="text-xs sm:text-sm font-bold text-white truncate max-w-[150px] sm:max-w-md">{{ notebook?.title }}</h1>
         </div>
       </div>
 
       <!-- Action Buttons -->
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <!-- Generate Study Set Button -->
         <button
           @click="openQuizModal"
           :disabled="!selectedDocument"
-          class="px-3 py-1.5 rounded-md bg-blueprint-accent hover:bg-amber-400 text-blueprint-dark font-bold text-xs flex items-center gap-1.5 shadow disabled:opacity-40 transition-all"
+          class="px-2.5 sm:px-3 py-1.5 rounded-md bg-blueprint-accent hover:bg-amber-400 text-blueprint-dark font-bold text-[11px] sm:text-xs flex items-center gap-1 shadow disabled:opacity-40 transition-all"
         >
-          <span>🎯</span> Sinh Bộ Đề AI
+          <span>🎯</span> <span class="hidden sm:inline">Sinh Bộ Đề AI</span><span class="sm:hidden">Sinh đề</span>
         </button>
 
         <!-- Upload File Button -->
-        <label class="px-3 py-1.5 rounded-md bg-blueprint hover:bg-blueprint-light text-white font-semibold text-xs flex items-center gap-1.5 shadow cursor-pointer transition-colors">
-          <span>📤</span> Tải giáo trình
+        <label class="px-2.5 sm:px-3 py-1.5 rounded-md bg-blueprint hover:bg-blueprint-light text-white font-semibold text-[11px] sm:text-xs flex items-center gap-1 shadow cursor-pointer transition-colors">
+          <span>📤</span> <span class="hidden sm:inline">Tải giáo trình</span><span class="sm:hidden">Tải tệp</span>
           <input type="file" @change="handleFileUpload" class="hidden" accept=".pdf,.docx,.doc,.pptx,.txt" />
         </label>
       </div>
     </div>
 
-    <!-- Workspace Main Split View -->
-    <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
-      <!-- Left Pane: PDF Viewer -->
-      <div class="w-full md:w-1/2 h-1/2 md:h-full border-b md:border-b-0 md:border-r border-slate-800 flex flex-col">
+    <!-- Mobile Segmented Control Bar (md:hidden) -->
+    <div class="md:hidden bg-slate-900 border-b border-slate-800 p-1.5 flex gap-1 shrink-0">
+      <button
+        @click="activeMobileTab = 'chat'"
+        :class="[
+          'flex-1 py-1.5 text-xs font-bold rounded-md transition-all flex items-center justify-center gap-1.5',
+          activeMobileTab === 'chat'
+            ? 'bg-blueprint-accent text-blueprint-dark shadow'
+            : 'text-gray-400 hover:text-white'
+        ]"
+      >
+        <span>💬</span> Trợ lý AI RAG
+      </button>
+
+      <button
+        @click="activeMobileTab = 'pdf'"
+        :class="[
+          'flex-1 py-1.5 text-xs font-bold rounded-md transition-all flex items-center justify-center gap-1.5',
+          activeMobileTab === 'pdf'
+            ? 'bg-blueprint-accent text-blueprint-dark shadow'
+            : 'text-gray-400 hover:text-white'
+        ]"
+      >
+        <span>📄</span> Xem Tài liệu PDF
+      </button>
+    </div>
+
+    <!-- Workspace Main Body -->
+    <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+      <!-- Left Pane: PDF Viewer (Always visible on PC, toggled on Mobile) -->
+      <div
+        :class="[
+          'w-full md:w-1/2 h-full border-r border-slate-800 flex flex-col',
+          activeMobileTab === 'pdf' ? 'flex' : 'hidden md:flex'
+        ]"
+      >
         <!-- Document Selector Bar -->
-        <div class="bg-slate-900 px-4 py-2 flex items-center justify-between border-b border-slate-800 text-xs">
-          <div class="flex items-center gap-2 truncate">
-            <span class="text-gray-400 font-mono">Tài liệu:</span>
+        <div class="bg-slate-900 px-3 sm:px-4 py-2 flex items-center justify-between border-b border-slate-800 text-xs">
+          <div class="flex items-center gap-2 truncate flex-1">
+            <span class="text-gray-400 font-mono text-[11px]">Tài liệu:</span>
             <select
               v-model="selectedDocumentId"
-              class="bg-slate-800 text-white rounded px-2.5 py-1 border border-slate-700 outline-none text-xs max-w-xs truncate"
+              class="bg-slate-800 text-white rounded px-2 py-1 border border-slate-700 outline-none text-xs truncate max-w-[200px] sm:max-w-xs"
             >
               <option v-for="doc in notebookStore.documents" :key="doc.id" :value="doc.id">
                 {{ doc.file_name }} ({{ doc.total_pages }} trang) - [{{ doc.rag_status }}]
@@ -55,7 +87,7 @@
           <button
             v-if="selectedDocument"
             @click="deleteCurrentDoc"
-            class="text-[11px] text-red-400 hover:text-red-300 ml-2"
+            class="text-[11px] text-red-400 hover:text-red-300 ml-2 font-mono shrink-0"
             title="Xóa tài liệu này"
           >
             🗑️ Xóa tệp
@@ -63,7 +95,7 @@
         </div>
 
         <!-- PDF Reader Component -->
-        <div class="flex-1 overflow-hidden">
+        <div class="flex-1 overflow-hidden relative">
           <PdfViewer
             ref="pdfViewerRef"
             :doc-url="currentDocDownloadUrl"
@@ -71,46 +103,60 @@
             :initial-page="targetPage"
             :total-pages="selectedDocument?.total_pages || 1"
           />
+
+          <!-- Mobile floating "Back to Chat" button -->
+          <button
+            v-if="activeMobileTab === 'pdf'"
+            @click="activeMobileTab = 'chat'"
+            class="md:hidden absolute bottom-4 right-4 z-20 px-3.5 py-2 rounded-full bg-blueprint-accent text-blueprint-dark font-bold text-xs shadow-2xl flex items-center gap-1.5 border border-amber-300 animate-bounce"
+          >
+            <span>‹</span> Quay lại đoạn Chat
+          </button>
         </div>
       </div>
 
-      <!-- Right Pane: Strict Grounded RAG Chat -->
-      <div class="w-full md:w-1/2 h-1/2 md:h-full flex flex-col bg-slate-900/90 text-white">
-        <!-- Chat Header -->
-        <div class="bg-slate-800/80 px-4 py-2 border-b border-slate-700/80 flex items-center justify-between text-xs">
+      <!-- Right Pane: Strict Grounded RAG Chat (Always visible on PC, toggled on Mobile) -->
+      <div
+        :class="[
+          'w-full md:w-1/2 h-full flex flex-col bg-slate-900/90 text-white',
+          activeMobileTab === 'chat' ? 'flex' : 'hidden md:flex'
+        ]"
+      >
+        <!-- Chat Header Bar -->
+        <div class="bg-slate-800/80 px-3 sm:px-4 py-2 border-b border-slate-700/80 flex items-center justify-between text-xs">
           <div class="flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span class="font-bold text-gray-200">Trợ Lý RAG Chống Bịa Đặt</span>
-            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-blue-950 text-blue-300 border border-blue-800">
+            <span class="font-bold text-gray-200 text-xs">Trợ Lý RAG Chống Bịa Đặt</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-blue-950 text-blue-300 border border-blue-800 hidden sm:inline">
               Cosine &ge; 0.65
             </span>
           </div>
 
           <button
             @click="notebookStore.clearChat"
-            class="text-gray-400 hover:text-gray-200 text-xs font-mono"
+            class="text-gray-400 hover:text-gray-200 text-[11px] font-mono"
           >
-            Xóa lịch sử chat
+            Xóa lịch sử
           </button>
         </div>
 
-        <!-- Chat Message Log -->
-        <div class="flex-1 overflow-y-auto p-4 space-y-4" ref="chatScroll">
+        <!-- Chat Message Scroll Area -->
+        <div class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4" ref="chatScroll">
           <!-- Empty State -->
-          <div v-if="notebookStore.chatMessages.length === 0" class="text-center py-12 text-slate-400 max-w-sm mx-auto">
-            <div class="w-12 h-12 rounded-xl bg-blueprint/60 text-blueprint-accent text-2xl flex items-center justify-center mx-auto mb-3">
+          <div v-if="notebookStore.chatMessages.length === 0" class="text-center py-10 sm:py-14 text-slate-400 max-w-sm mx-auto px-2">
+            <div class="w-12 h-12 rounded-xl bg-blueprint/60 text-blueprint-accent text-2xl flex items-center justify-center mx-auto mb-3 shadow">
               🤖
             </div>
             <h4 class="font-bold text-white text-sm mb-1">Trợ Lý Giáo Trình Sẵn Sàng</h4>
             <p class="text-xs text-slate-400 leading-relaxed mb-4">
-              Đặt bất kỳ câu hỏi nào về môn học. AI chỉ trả lời dựa trên tài liệu bạn đã tải lên và đính kèm trích dẫn số trang chính xác.
+              Đặt câu hỏi về nội dung giáo trình. AI chỉ trích xuất từ tài liệu đã nạp và cung cấp số trang trích dẫn chính xác.
             </p>
             <div class="space-y-1.5 text-left text-xs">
               <button
                 v-for="(sample, sIdx) in sampleQuestions"
                 :key="sIdx"
                 @click="sendPrompt(sample)"
-                class="w-full text-left p-2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 truncate"
+                class="w-full text-left p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 truncate transition-colors"
               >
                 💬 {{ sample }}
               </button>
@@ -125,7 +171,7 @@
           >
             <div
               :class="[
-                'max-w-[85%] rounded-2xl p-4 text-xs sm:text-sm leading-relaxed shadow',
+                'max-w-[90%] sm:max-w-[85%] rounded-2xl p-3.5 sm:p-4 text-xs sm:text-sm leading-relaxed shadow',
                 msg.role === 'user'
                   ? 'bg-blueprint text-white rounded-tr-none'
                   : 'bg-slate-800 border border-slate-700 text-slate-100 rounded-tl-none'
@@ -134,7 +180,7 @@
               <!-- Content -->
               <div class="whitespace-pre-wrap">{{ msg.content }}</div>
 
-              <!-- Citations Badges (Clickable: jumps PDF viewer to page!) -->
+              <!-- Clickable Citations Badges -->
               <div v-if="msg.citations && msg.citations.length > 0" class="mt-3 pt-3 border-t border-slate-700">
                 <div class="text-[11px] font-mono text-blueprint-accent mb-1.5 font-bold flex items-center gap-1">
                   <span>📌</span> Trích dẫn nguồn tài liệu:
@@ -148,7 +194,7 @@
                     :title="cite.preview"
                   >
                     <span>📑</span>
-                    <span>{{ cite.file_name }}</span>
+                    <span class="truncate max-w-[120px]">{{ cite.file_name }}</span>
                     <span class="font-bold text-blueprint-accent">[Trang {{ cite.page_number }}]</span>
                   </button>
                 </div>
@@ -167,20 +213,20 @@
           </div>
         </div>
 
-        <!-- Chat Input Bar -->
-        <div class="p-3 bg-slate-950 border-t border-slate-800">
+        <!-- Chat Input Bar (Pinned at bottom) -->
+        <div class="p-2.5 sm:p-3 bg-slate-950 border-t border-slate-800 shrink-0">
           <form @submit.prevent="handleChatSubmit" class="flex items-center gap-2">
             <input
               v-model="questionInput"
               type="text"
               :disabled="notebookStore.isChatLoading"
-              placeholder="Đặt câu hỏi về nội dung giáo trình môn học..."
-              class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-xs sm:text-sm text-white focus:border-blueprint-accent focus:ring-1 focus:ring-blueprint-accent outline-none"
+              placeholder="Đặt câu hỏi về nội dung giáo trình..."
+              class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:border-blueprint-accent focus:ring-1 focus:ring-blueprint-accent outline-none"
             />
             <button
               type="submit"
               :disabled="!questionInput.trim() || notebookStore.isChatLoading"
-              class="px-5 py-3 rounded-xl bg-blueprint-accent hover:bg-amber-400 text-blueprint-dark font-bold text-xs shadow disabled:opacity-40 transition-transform active:scale-95"
+              class="px-4 sm:px-5 py-2.5 rounded-xl bg-blueprint-accent hover:bg-amber-400 text-blueprint-dark font-bold text-xs shadow disabled:opacity-40 transition-transform active:scale-95 shrink-0"
             >
               Gửi
             </button>
@@ -210,6 +256,7 @@ const pdfViewerRef = ref(null)
 const targetPage = ref(1)
 const questionInput = ref('')
 const chatScroll = ref(null)
+const activeMobileTab = ref('chat') // 'chat' or 'pdf'
 
 const sampleQuestions = [
   'Tóm tắt các kiến thức cốt lõi trong chương 1?',
@@ -230,14 +277,18 @@ const selectedDocument = computed(() => {
 
 const currentDocDownloadUrl = computed(() => {
   if (!selectedDocument.value) return null
-  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
-  return `${apiBase}/documents/${selectedDocument.value.id}/download`
+  const apiBase = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/+$/, '')
+  return `${apiBase}/api/documents/${selectedDocument.value.id}/download`
 })
 
 const onCitationClick = (citation) => {
-  if (citation.page_number && pdfViewerRef.value) {
+  if (citation.page_number) {
     targetPage.value = citation.page_number
-    pdfViewerRef.value.jumpToPage(citation.page_number)
+    // On mobile: switch to PDF viewer tab smoothly!
+    activeMobileTab.value = 'pdf'
+    nextTick(() => {
+      pdfViewerRef.value?.jumpToPage(citation.page_number)
+    })
   }
 }
 

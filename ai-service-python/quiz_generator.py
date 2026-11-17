@@ -121,7 +121,7 @@ class QuizGenerator:
             raise ValueError("Document contains no readable text.")
 
         # If document is small or medium (under 12,000 characters), process in one shot
-        max_batch_chars = 10000
+        max_batch_chars = 12000
         if len(text) <= max_batch_chars:
             data = cls.generate_quiz_chunk(text, api_key=api_key)
             return cls._standardize_data(data)

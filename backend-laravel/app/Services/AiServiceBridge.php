@@ -39,7 +39,12 @@ class AiServiceBridge
     ): array {
         $apiKey = $this->resolveApiKey($user);
 
-        $response = Http::timeout(180)->post("{$this->baseUrl}/api/rag/ingest", [
+        $headers = [];
+        if ($apiKey) {
+            $headers['X-Gemini-Api-Key'] = $apiKey;
+        }
+
+        $response = Http::withHeaders($headers)->timeout(180)->post("{$this->baseUrl}/api/rag/ingest", [
             'file_path' => $filePath,
             'file_name' => $fileName,
             'notebook_id' => $notebookId,
@@ -65,7 +70,12 @@ class AiServiceBridge
     ): array {
         $apiKey = $this->resolveApiKey($user);
 
-        $response = Http::timeout(60)->post("{$this->baseUrl}/api/rag/chat", [
+        $headers = [];
+        if ($apiKey) {
+            $headers['X-Gemini-Api-Key'] = $apiKey;
+        }
+
+        $response = Http::withHeaders($headers)->timeout(60)->post("{$this->baseUrl}/api/rag/chat", [
             'question' => $question,
             'notebook_id' => $notebookId,
             'api_key' => $apiKey,
@@ -99,7 +109,12 @@ class AiServiceBridge
     ): array {
         $apiKey = $this->resolveApiKey($user);
 
-        $response = Http::timeout(180)->post("{$this->baseUrl}/api/quiz/generate", [
+        $headers = [];
+        if ($apiKey) {
+            $headers['X-Gemini-Api-Key'] = $apiKey;
+        }
+
+        $response = Http::withHeaders($headers)->timeout(180)->post("{$this->baseUrl}/api/quiz/generate", [
             'file_path' => $filePath,
             'raw_text' => $rawText,
             'api_key' => $apiKey,
@@ -198,7 +213,12 @@ class AiServiceBridge
     {
         $apiKey = $this->resolveApiKey($user);
 
-        $response = Http::timeout(300)->post("{$this->baseUrl}/api/convert/transcribe-lecture", [
+        $headers = [];
+        if ($apiKey) {
+            $headers['X-Gemini-Api-Key'] = $apiKey;
+        }
+
+        $response = Http::withHeaders($headers)->timeout(300)->post("{$this->baseUrl}/api/convert/transcribe-lecture", [
             'media_path' => $mediaPath,
             'api_key' => $apiKey,
         ]);

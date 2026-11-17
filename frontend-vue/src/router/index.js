@@ -26,19 +26,7 @@ const routes = [
   {
     path: '/auth/callback',
     name: 'auth-callback',
-    component: {
-      template: '<div class="min-h-screen flex items-center justify-center text-white">Đang xử lý đăng nhập Google...</div>',
-      mounted() {
-        const urlParams = new URLSearchParams(window.location.search)
-        const token = urlParams.get('token')
-        if (token) {
-          localStorage.setItem('noteforge_token', token)
-          window.location.href = '/dashboard'
-        } else {
-          window.location.href = '/login?error=Google_Auth_Failed'
-        }
-      },
-    },
+    component: () => import('@/views/AuthCallback.vue'),
   },
   {
     path: '/dashboard',

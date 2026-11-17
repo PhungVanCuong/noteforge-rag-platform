@@ -4,7 +4,7 @@ import uuid
 from typing import List, Optional
 from pathlib import Path
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks, status
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks, status, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -103,15 +103,16 @@ def health_check():
 # RAG Endpoints
 # -----------------------------------------------------------------------------
 @app.post("/api/rag/ingest")
-def rag_ingest(payload: RagIngestPayload):
+def rag_ingest(payload: RagIngestPayload, x_gemini_api_key: Optional[str] = Header(None)):
     try:
+        active_key = x_gemini_api_key or payload.api_key
         result = rag_service.ingest_document(
             file_path=payload.file_path,
             file_name=payload.file_name,
             notebook_id=payload.notebook_id,
             document_id=payload.document_id,
             user_id=payload.user_id,
-            api_key=payload.api_key
+            api_key=active_key
         )
         return {"success": True, "data": result}
     except Exception as e:
@@ -121,12 +122,13 @@ def rag_ingest(payload: RagIngestPayload):
         )
 
 @app.post("/api/rag/chat")
-def rag_chat(payload: RagChatPayload):
+def rag_chat(payload: RagChatPayload, x_gemini_api_key: Optional[str] = Header(None)):
     try:
+        active_key = x_gemini_api_key or payload.api_key
         result = rag_service.query_rag(
             question=payload.question,
             notebook_id=payload.notebook_id,
-            api_key=payload.api_key,
+            api_key=active_key,
             top_k=payload.top_k,
             similarity_threshold=payload.similarity_threshold
         )
@@ -153,12 +155,13 @@ def rag_delete_document(document_id: int):
 # Quiz & Cloze Generation Endpoint
 # -----------------------------------------------------------------------------
 @app.post("/api/quiz/generate")
-def generate_quiz(payload: QuizGeneratePayload):
+def generate_quiz(payload: QuizGeneratePayload, x_gemini_api_key: Optional[str] = Header(None)):
     try:
+        active_key = x_gemini_api_key or payload.api_key
         result = QuizGenerator.generate_full_study_set(
             file_path=payload.file_path,
             raw_text=payload.raw_text,
-            api_key=payload.api_key
+            api_key=active_key
         )
         return {"success": True, "data": result}
     except Exception as e:
