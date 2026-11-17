@@ -1,0 +1,53 @@
+# Environment and Sensitive Keys
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# Dependencies
+node_modules/
+vendor/
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+
+# Build artifacts & caches
+dist/
+dist-ssr/
+*.local
+.npm
+.eslintcache
+.stylelintcache
+.turbo
+.nuxt
+.output
+.vite
+
+# Database & Storage
+*.sqlite
+*.sqlite3
+ai-service-python/vector_db/
+ai-service-python/storage/
+backend-laravel/storage/app/public/conversions_temp/
+backend-laravel/storage/app/public/study_temp/
+backend-laravel/storage/framework/cache/*
+backend-laravel/storage/framework/sessions/*
+backend-laravel/storage/framework/views/*
+backend-laravel/storage/logs/*
+!backend-laravel/storage/framework/cache/.gitkeep
+!backend-laravel/storage/framework/sessions/.gitkeep
+!backend-laravel/storage/framework/views/.gitkeep
+!backend-laravel/storage/logs/.gitkeep
+
+# IDE & OS
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db

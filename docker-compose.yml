@@ -1,0 +1,97 @@
+services:
+  # ---------------------------------------------------------------------------
+  # MySQL 8.0 Relational Database
+  # ---------------------------------------------------------------------------
+  mysql:
+    image: mysql:8.0
+    container_name: noteforge_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: noteforge_db
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - noteforge_net
+
+  # ---------------------------------------------------------------------------
+  # Python AI & Media Engine (FastAPI + RAG + FFmpeg + LibreOffice)
+  # ---------------------------------------------------------------------------
+  ai-service:
+    build:
+      context: ./ai-service-python
+      dockerfile: Dockerfile
+    container_name: noteforge_ai_service
+    restart: unless-stopped
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8001
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - CHROMA_PERSIST_DIR=/app/vector_db
+      - STORAGE_DIR=/app/storage
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./ai-service-python/vector_db:/app/vector_db
+      - shared_storage:/app/storage
+    networks:
+      - noteforge_net
+
+  # ---------------------------------------------------------------------------
+  # Laravel 11 Backend Core (PHP 8.2)
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend-laravel
+      dockerfile: Dockerfile
+    container_name: noteforge_backend
+    restart: unless-stopped
+    depends_on:
+      - mysql
+      - ai-service
+    environment:
+      - APP_NAME=NoteForge
+      - APP_ENV=local
+      - APP_KEY=${APP_KEY}
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=noteforge_db
+      - DB_USERNAME=root
+      - DB_PASSWORD=root
+      - AI_SERVICE_URL=http://ai-service:8001
+      - SYSTEM_GEMINI_API_KEY=${GEMINI_API_KEY}
+      - FRONTEND_URL=http://localhost:3000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend-laravel:/var/www
+      - shared_storage:/var/www/storage/app/public
+    networks:
+      - noteforge_net
+
+  # ---------------------------------------------------------------------------
+  # Vue 3 Frontend SPA (Vite + Tailwind)
+  # ---------------------------------------------------------------------------
+  frontend:
+    image: node:20-alpine
+    container_name: noteforge_frontend
+    working_dir: /app
+    volumes:
+      - ./frontend-vue:/app
+    ports:
+      - "3000:3000"
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    networks:
+      - noteforge_net
+
+networks:
+  noteforge_net:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  shared_storage:

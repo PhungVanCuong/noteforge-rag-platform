@@ -1,0 +1,85 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\NotebookController;
+use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\RagController;
+use App\Http\Controllers\ConverterController;
+use App\Http\Controllers\StudySetController;
+
+/*
+|--------------------------------------------------------------------------
+| API Routes - NoteForge AI Platform
+|--------------------------------------------------------------------------
+*/
+
+// Public Authentication & OTP
+Route::prefix('auth')->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
+    Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
+    Route::post('/login', [AuthController::class, 'login']);
+
+    // Google OAuth 2.0
+    Route::get('/google/redirect', [AuthController::class, 'googleRedirect']);
+    Route::get('/google/callback', [AuthController::class, 'googleCallback']);
+});
+
+// Public Study Set Access & Standalone Offline HTML Export
+Route::get('/study-sets/public/{slug}', [StudySetController::class, 'show']);
+Route::get('/study-sets/{idOrSlug}/export-html', [StudySetController::class, 'exportOfflineHtml']);
+
+// Protected Routes (Sanctum Authenticated)
+Route::middleware('auth:sanctum')->group(function () {
+
+    // User Profile & Settings
+    Route::prefix('auth')->group(function () {
+        Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::post('/gemini-key', [AuthController::class, 'updateGeminiKey']);
+    });
+
+    // Notebooks (Workspaces)
+    Route::prefix('notebooks')->group(function () {
+        Route::get('/', [NotebookController::class, 'index']);
+        Route::post('/', [NotebookController::class, 'store']);
+        Route::get('/{id}', [NotebookController::class, 'show']);
+        Route::put('/{id}', [NotebookController::class, 'update']);
+        Route::delete('/{id}', [NotebookController::class, 'destroy']);
+        Route::post('/{id}/upload', [NotebookController::class, 'uploadDocument']);
+    });
+
+    // Documents
+    Route::prefix('documents')->group(function () {
+        Route::get('/{id}/download', [DocumentController::class, 'download']);
+        Route::delete('/{id}', [DocumentController::class, 'destroy']);
+        Route::post('/{id}/reindex', [DocumentController::class, 'reindex']);
+    });
+
+    // RAG Assistant
+    Route::post('/rag/chat', [RagController::class, 'chat']);
+
+    // Universal Converter Hub
+    Route::prefix('converters')->group(function () {
+        Route::get('/jobs', [ConverterController::class, 'index']);
+        Route::post('/pdf-to-word', [ConverterController::class, 'pdfToWord']);
+        Route::post('/word-to-pdf', [ConverterController::class, 'wordToPdf']);
+        Route::post('/merge-pdf', [ConverterController::class, 'mergePdf']);
+        Route::post('/split-pdf', [ConverterController::class, 'splitPdf']);
+        Route::post('/image', [ConverterController::class, 'convertImage']);
+        Route::post('/images-to-pdf', [ConverterController::class, 'imagesToPdf']);
+        Route::post('/transcribe', [ConverterController::class, 'transcribeLecture']);
+    });
+
+    // Study Sets & Interactive Modes
+    Route::prefix('study-sets')->group(function () {
+        Route::get('/', [StudySetController::class, 'index']);
+        Route::post('/generate', [StudySetController::class, 'generate']);
+        Route::get('/{id}', [StudySetController::class, 'show']);
+        Route::post('/{id}/progress', [StudySetController::class, 'updateProgress']);
+        Route::get('/{id}/progress', [StudySetController::class, 'getProgress']);
+        Route::post('/{id}/exam-attempt', [StudySetController::class, 'submitExamAttempt']);
+        Route::get('/{id}/attempts', [StudySetController::class, 'listAttempts']);
+    });
+});
