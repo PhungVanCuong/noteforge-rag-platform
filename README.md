@@ -86,7 +86,17 @@ Hệ thống đã được thiết lập sẵn bộ `.env` hoàn chỉnh khớp 
 ### Cách 1: Khởi chạy 1-Click bằng file `start.bat` (Khuyên dùng trên Windows)
 1. Bật MySQL Server (XAMPP / Laragon / MySQL Service).
 2. Nhấp đúp chuột vào file **`start.bat`** tại thư mục gốc.
-3. Tệp script sẽ tự động kiểm tra thư viện, tạo database `noteforge_db`, nạp dữ liệu mẫu 50 câu .NET/WPF, chạy 4 tiến trình và tự động mở trình duyệt tại `http://localhost:5173`.
+3. Tệp script sẽ tự động kiểm tra thư viện, tạo database `noteforge_db`, nạp toàn bộ bảng và dữ liệu mẫu 50 câu .NET/WPF, chạy 4 tiến trình và tự động mở trình duyệt tại `http://localhost:5173`.
+
+#### Danh Sách Tài Khoản Mẫu Có Sẵn (Đã Kích Hoạt OTP & Mật Khẩu: `password123`)
+
+| STT | Họ và Tên | Email Đăng Nhập | Mật Khẩu | Vai Trò / Không Gian Môn Học Mẫu |
+| :---: | :--- | :--- | :---: | :--- |
+| 1 | **Phùng Văn Cường (Admin)** | `cuongphung1810@gmail.com` | `password123` | Chủ dự án & Toàn quyền hệ thống (.NET/WPF + AI RAG) |
+| 2 | **Quản Trị Viên Hệ Thống** | `admin@noteforge.ai` | `password123` | Quản trị viên (Hệ Quản trị CSDL & Tối ưu SQL - DBI202) |
+| 3 | **Nguyễn Văn An** | `sinhvien@noteforge.ai` | `password123` | Sinh viên CNTT (Cấu trúc Dữ liệu & Giải thuật - CSD201) |
+| 4 | **TS. Trần Minh Đức** | `giangvien@noteforge.ai` | `password123` | Giảng viên bộ môn (Lập trình Fullstack Web - SWE301) |
+| 5 | **Tài Khoản Trải Nghiệm** | `demo@noteforge.ai` | `password123` | Tài khoản trải nghiệm nhanh (Nhập môn AI & LLMs - AIT101) |
 
 ### Cách 2: Khởi chạy thủ công từng phân hệ
 

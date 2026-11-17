@@ -69,7 +69,8 @@ if not exist ".env" (
     call php artisan key:generate
 )
 call php artisan migrate --force >nul 2>nul
-echo [OK] Laravel Backend da san sang!
+call php artisan db:seed --force >nul 2>nul
+echo [OK] Laravel Backend va CSDL da duoc dong bo san sang!
 echo.
 
 REM 5. Python AI Engine Dependencies

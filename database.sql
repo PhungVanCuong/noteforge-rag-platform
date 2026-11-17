@@ -198,20 +198,108 @@ CREATE TABLE `personal_access_tokens` (
   KEY `personal_access_tokens_tokenable_type_tokenable_id_index` (`tokenable_type`, `tokenable_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- -----------------------------------------------------------------------------
+-- 10. Table: cache & cache_locks (Laravel Database Cache Driver)
+-- -----------------------------------------------------------------------------
+DROP TABLE IF EXISTS `cache`;
+CREATE TABLE `cache` (
+  `key` VARCHAR(255) NOT NULL,
+  `value` MEDIUMTEXT NOT NULL,
+  `expiration` INT NOT NULL,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `cache_locks`;
+CREATE TABLE `cache_locks` (
+  `key` VARCHAR(255) NOT NULL,
+  `owner` VARCHAR(255) NOT NULL,
+  `expiration` INT NOT NULL,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- 11. Table: sessions (Laravel Database Session Driver)
+-- -----------------------------------------------------------------------------
+DROP TABLE IF EXISTS `sessions`;
+CREATE TABLE `sessions` (
+  `id` VARCHAR(255) NOT NULL,
+  `user_id` BIGINT UNSIGNED NULL DEFAULT NULL,
+  `ip_address` VARCHAR(45) NULL DEFAULT NULL,
+  `user_agent` TEXT NULL DEFAULT NULL,
+  `payload` LONGTEXT NOT NULL,
+  `last_activity` INT NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `sessions_user_id_index` (`user_id`),
+  KEY `sessions_last_activity_index` (`last_activity`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- 12. Tables: jobs, job_batches, failed_jobs (Laravel Queue Database Driver)
+-- -----------------------------------------------------------------------------
+DROP TABLE IF EXISTS `jobs`;
+CREATE TABLE `jobs` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `queue` VARCHAR(255) NOT NULL,
+  `payload` LONGTEXT NOT NULL,
+  `attempts` TINYINT UNSIGNED NOT NULL,
+  `reserved_at` INT UNSIGNED NULL DEFAULT NULL,
+  `available_at` INT UNSIGNED NOT NULL,
+  `created_at` INT UNSIGNED NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `jobs_queue_index` (`queue`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `job_batches`;
+CREATE TABLE `job_batches` (
+  `id` VARCHAR(255) NOT NULL,
+  `name` VARCHAR(255) NOT NULL,
+  `total_jobs` INT NOT NULL,
+  `pending_jobs` INT NOT NULL,
+  `failed_jobs` INT NOT NULL,
+  `failed_job_ids` LONGTEXT NOT NULL,
+  `options` MEDIUMTEXT NULL,
+  `cancelled_at` INT NULL,
+  `created_at` INT NOT NULL,
+  `finished_at` INT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `failed_jobs`;
+CREATE TABLE `failed_jobs` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `uuid` VARCHAR(255) NOT NULL,
+  `connection` TEXT NOT NULL,
+  `queue` TEXT NOT NULL,
+  `payload` LONGTEXT NOT NULL,
+  `exception` LONGTEXT NOT NULL,
+  `failed_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `failed_jobs_uuid_unique` (`uuid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- -----------------------------------------------------------------------------
--- Seed Sample Data: Demo User, Notebooks & 50-Question Study Set (.NET & WPF)
+-- Seed Sample Data: Ready-to-Use Accounts, Notebooks & 50-Question Study Set
+-- (Mật khẩu mặc định cho tất cả tài khoản mẫu: password123)
 -- -----------------------------------------------------------------------------
-INSERT INTO `users` (`id`, `name`, `email`, `password`, `email_verified_at`)
+INSERT INTO `users` (`id`, `name`, `email`, `password`, `avatar`, `email_verified_at`)
 VALUES
-  (1, 'Phùng Văn Cường', 'cuongphung1810@gmail.com', '$2y$12$eImiTXuWVxfM37uY4JANj.bF3g3Vq3q0sJd1Wc9Nf1L02v2vF3LzK', NOW())
-ON DUPLICATE KEY UPDATE `email_verified_at` = NOW();
+  (1, 'Phùng Văn Cường (Admin)', 'cuongphung1810@gmail.com', '$2y$12$eImiTXuWVxfM37uY4JANj.bF3g3Vq3q0sJd1Wc9Nf1L02v2vF3LzK', 'https://ui-avatars.com/api/?name=Cuong+Phung&background=0284c7&color=fff&bold=true', NOW()),
+  (2, 'Quản Trị Viên Hệ Thống', 'admin@noteforge.ai', '$2y$12$eImiTXuWVxfM37uY4JANj.bF3g3Vq3q0sJd1Wc9Nf1L02v2vF3LzK', 'https://ui-avatars.com/api/?name=Admin+NoteForge&background=4f46e5&color=fff&bold=true', NOW()),
+  (3, 'Nguyễn Văn An (Sinh viên CNTT)', 'sinhvien@noteforge.ai', '$2y$12$eImiTXuWVxfM37uY4JANj.bF3g3Vq3q0sJd1Wc9Nf1L02v2vF3LzK', 'https://ui-avatars.com/api/?name=Nguyen+Van+An&background=10b981&color=fff&bold=true', NOW()),
+  (4, 'TS. Trần Minh Đức (Giảng viên)', 'giangvien@noteforge.ai', '$2y$12$eImiTXuWVxfM37uY4JANj.bF3g3Vq3q0sJd1Wc9Nf1L02v2vF3LzK', 'https://ui-avatars.com/api/?name=Tran+Minh+Duc&background=f59e0b&color=fff&bold=true', NOW()),
+  (5, 'Tài Khoản Trải Nghiệm Demo', 'demo@noteforge.ai', '$2y$12$eImiTXuWVxfM37uY4JANj.bF3g3Vq3q0sJd1Wc9Nf1L02v2vF3LzK', 'https://ui-avatars.com/api/?name=Demo+User&background=ec4899&color=fff&bold=true', NOW())
+ON DUPLICATE KEY UPDATE `email_verified_at` = NOW(), `name` = VALUES(`name`);
 
 INSERT INTO `notebooks` (`id`, `user_id`, `title`, `subject_code`, `description`)
 VALUES
   (1, 1, 'Lập trình .NET & Ứng dụng Desktop WPF', 'PRN211', 'Toàn bộ giáo trình C#, XAML Data Binding, MVVM Pattern, Entity Framework Core và lập trình bất đồng bộ.'),
-  (2, 1, 'Kiến trúc Microservices & AI RAG Engine', 'AIE401', 'Tìm kiếm ngữ nghĩa (Semantic Search), Vector Database ChromaDB, Hybrid Microservices với Laravel và FastAPI.')
+  (2, 1, 'Kiến trúc Microservices & AI RAG Engine', 'AIE401', 'Tìm kiếm ngữ nghĩa (Semantic Search), Vector Database ChromaDB, Hybrid Microservices với Laravel và FastAPI.'),
+  (3, 2, 'Hệ Quản trị Cơ sở Dữ liệu & Tối ưu SQL', 'DBI202', 'Thiết kế chuẩn hóa CSDL, chỉ mục Indexing B-Tree, tối ưu truy vấn phức tạp và quản lý Transactions.'),
+  (4, 3, 'Cấu trúc Dữ liệu & Giải thuật nâng cao', 'CSD201', 'Cây nhị phân tìm kiếm BST, Đồ thị Graph, Quy hoạch động Dynamic Programming và tối ưu độ phức tạp thuật toán.'),
+  (5, 4, 'Lập trình Web Fullstack với Laravel & Vue 3', 'SWE301', 'Kiến trúc SPA, RESTful API, Sanctum Token Authentication, Pinia Store và Reactive Component Pattern.'),
+  (6, 5, 'Nhập môn Trí tuệ Nhân tạo & LLMs', 'AIT101', 'Khái niệm nền tảng về Generative AI, Retrieval Augmented Generation, Prompt Engineering và Vector Embeddings.')
 ON DUPLICATE KEY UPDATE `title` = VALUES(`title`);
 
 INSERT INTO `study_sets` (`id`, `notebook_id`, `user_id`, `share_slug`, `title`, `categories_json`, `questions_json`, `code_exercises_json`, `is_public`)
