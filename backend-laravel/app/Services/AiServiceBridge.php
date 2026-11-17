@@ -15,7 +15,7 @@ class AiServiceBridge
     public function __construct()
     {
         $this->baseUrl = rtrim(config('services.ai_service.url', env('AI_SERVICE_URL', 'http://127.0.0.1:8001')), '/');
-        $this->systemApiKey = env('SYSTEM_GEMINI_API_KEY', '');
+        $this->systemApiKey = env('GEMINI_API_KEY', env('SYSTEM_GEMINI_API_KEY', ''));
     }
 
     public function resolveApiKey(?User $user): ?string
