@@ -42,14 +42,22 @@ export const useStudyStore = defineStore('study', {
         const response = await apiClient.post('/study-sets/generate', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
-        const newSet = response.data.data
-        this.studySets.unshift(newSet)
-        return newSet
+        return response.data.data
       } catch (err) {
-        this.error = err.response?.data?.message || 'Sinh bộ đề bằng AI thất bại.'
+        this.error = err.response?.data?.message || 'Khởi tạo tác vụ sinh đề thất bại.'
         throw err
       } finally {
         this.generating = false
+      }
+    },
+
+    async pollStudySetStatus(studySetId) {
+      try {
+        const response = await apiClient.get(`/study-sets/${studySetId}/status`)
+        return response.data.data
+      } catch (err) {
+        console.warn('Failed to poll study set status:', err)
+        throw err
       }
     },
 

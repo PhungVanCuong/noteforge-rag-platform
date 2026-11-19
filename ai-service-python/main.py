@@ -61,6 +61,8 @@ class QuizGeneratePayload(BaseModel):
     file_path: Optional[str] = None
     raw_text: Optional[str] = None
     api_key: Optional[str] = None
+    study_set_id: Optional[int] = None
+    callback_url: Optional[str] = None
 
 class TtsSynthesizePayload(BaseModel):
     text: str
@@ -173,7 +175,8 @@ def generate_quiz(payload: QuizGeneratePayload, x_gemini_api_key: Optional[str] 
         result = QuizGenerator.generate_full_study_set(
             file_path=payload.file_path,
             raw_text=payload.raw_text,
-            api_key=active_key
+            api_key=active_key,
+            callback_url=payload.callback_url
         )
         return {"success": True, "data": result}
     except Exception as e:

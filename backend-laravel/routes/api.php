@@ -88,6 +88,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('study-sets')->group(function () {
         Route::get('/', [StudySetController::class, 'index']);
         Route::post('/generate', [StudySetController::class, 'generate']);
+        Route::get('/{id}/status', [StudySetController::class, 'status']);
         Route::get('/{id}', [StudySetController::class, 'show']);
         Route::post('/{id}/progress', [StudySetController::class, 'updateProgress']);
         Route::get('/{id}/progress', [StudySetController::class, 'getProgress']);
@@ -96,3 +97,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{id}', [StudySetController::class, 'destroy']);
     });
 });
+
+// Internal Webhooks (Callable by Python AI Microservice on localhost)
+Route::post('/internal/study-sets/{id}/progress', [StudySetController::class, 'updateProgressInternal']);
+

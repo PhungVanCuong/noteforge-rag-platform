@@ -120,7 +120,7 @@ REM 1. Launch Python AI Service
 start "NoteForge - Python AI [8001]" /D "%ROOT_DIR%ai-service-python" cmd /k "color 0A & if exist venv\Scripts\activate.bat (call venv\Scripts\activate.bat) & uvicorn main:app --host 0.0.0.0 --port 8001 --reload"
 
 REM 2. Launch Laravel Queue Worker
-start "NoteForge - Laravel Queue Worker" /D "%ROOT_DIR%backend-laravel" cmd /k "color 0E & php artisan queue:work --tries=3"
+start "NoteForge - Laravel Queue Worker" /D "%ROOT_DIR%backend-laravel" cmd /k "color 0E & php artisan queue:work --timeout=1200 --tries=3"
 
 REM 3. Launch Laravel Backend Core
 start "NoteForge - Laravel Backend [8000]" /D "%ROOT_DIR%backend-laravel" cmd /k "color 0B & php artisan serve --host 0.0.0.0 --port 8000"

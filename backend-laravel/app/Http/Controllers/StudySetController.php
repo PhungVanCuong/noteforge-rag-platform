@@ -7,6 +7,7 @@ use App\Models\Document;
 use App\Models\QuestionProgress;
 use App\Models\ExamAttempt;
 use App\Services\AiServiceBridge;
+use App\Jobs\GenerateStudySetJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
@@ -39,7 +40,7 @@ class StudySetController extends Controller
     }
 
     /**
-     * Generate a new study set using Gemini 2.5 Flash Structured Output.
+     * Generate a new study set asynchronously via Queue to eliminate timeouts.
      */
     public function generate(Request $request)
     {
@@ -58,7 +59,7 @@ class StudySetController extends Controller
             $doc = $request->user()->documents()->findOrFail($request->document_id);
             $filePath = $doc->file_path;
             if (!$title) {
-                $title = "Bộ đề ôn tập: " . Pathinfo($doc->file_name, PATHINFO_FILENAME);
+                $title = "Bộ đề ôn tập: " . pathinfo($doc->file_name, PATHINFO_FILENAME);
             }
         } elseif ($request->hasFile('file')) {
             $file = $request->file('file');
@@ -70,7 +71,7 @@ class StudySetController extends Controller
             $file->move($dest, $name);
             $filePath = $dest . DIRECTORY_SEPARATOR . $name;
             if (!$title) {
-                $title = "Bộ đề: " . Pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                $title = "Bộ đề: " . pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
             }
         } elseif (!$request->filled('raw_text')) {
             return response()->json([
@@ -84,45 +85,125 @@ class StudySetController extends Controller
         }
 
         try {
-            $quizData = $this->aiBridge->generateQuiz(
-                filePath: $filePath,
-                rawText: $request->raw_text,
-                user: $request->user()
-            );
-
-            $questions = $quizData['questions'] ?? [];
-            $codeExercises = $quizData['code_exercises'] ?? [];
-
-            // Chặn tuyệt đối lưu bộ đề rỗng 0 câu • 0 code
-            if (empty($questions) && empty($codeExercises)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'AI không tìm thấy hoặc không trích xuất được câu hỏi nào từ nội dung tài liệu. Vui lòng kiểm tra lại tệp tải lên.'
-                ], 422);
-            }
-
+            // Create draft StudySet in 'processing' state with initial 5% progress
             $studySet = StudySet::create([
                 'notebook_id' => $request->notebook_id,
                 'user_id' => $request->user()->id,
                 'share_slug' => (string) Str::uuid(),
                 'title' => $title,
-                'categories_json' => $quizData['categories'] ?? ['Tổng hợp kiến thức'],
-                'questions_json' => $questions,
-                'code_exercises_json' => $codeExercises,
+                'categories_json' => ['Đang khởi tạo...'],
+                'questions_json' => [],
+                'code_exercises_json' => [],
                 'is_public' => true,
+                'status' => 'processing',
+                'progress' => 5,
+                'status_message' => 'Đang đưa tác vụ vào hàng đợi xử lý...',
+                'error_message' => null,
             ]);
 
+            // Dispatch background queue job (timeout: 1200s)
+            GenerateStudySetJob::dispatch(
+                $studySet->id,
+                $filePath,
+                $request->raw_text,
+                $request->user()->id
+            );
+
+            // Immediate 202 Accepted response for Vue polling
             return response()->json([
                 'success' => true,
-                'message' => "Hệ thống đã chuyển hóa thành công bộ đề với " . count($questions) . " câu trắc nghiệm và " . count($codeExercises) . " bài tập code!",
-                'data' => $studySet,
-            ], 201);
+                'message' => 'Yêu cầu sinh bộ đề đã được đưa vào hàng đợi xử lý nền.',
+                'data' => [
+                    'study_set_id' => $studySet->id,
+                    'id' => $studySet->id,
+                    'title' => $studySet->title,
+                    'status' => 'processing',
+                    'progress' => 5,
+                    'status_message' => 'Đang đưa tác vụ vào hàng đợi xử lý...',
+                ],
+            ], 202);
+
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Lỗi khi sinh bộ đề AI: ' . $e->getMessage()
+                'message' => 'Lỗi khi khởi tạo tác vụ sinh đề: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Poll real-time status and progress of a study set generation job.
+     */
+    public function status(Request $request, $id)
+    {
+        $studySet = StudySet::where('id', $id)
+            ->where(function ($q) use ($request) {
+                if ($request->user()) {
+                    $q->where('user_id', $request->user()->id)->orWhere('is_public', true);
+                } else {
+                    $q->where('is_public', true);
+                }
+            })
+            ->firstOrFail();
+
+        $questions = $studySet->questions_json ?? [];
+        $code = $studySet->code_exercises_json ?? [];
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $studySet->id,
+                'title' => $studySet->title,
+                'share_slug' => $studySet->share_slug,
+                'status' => $studySet->status ?? 'completed',
+                'progress' => (int) ($studySet->progress ?? 100),
+                'status_message' => $studySet->status_message ?? '',
+                'error_message' => $studySet->error_message,
+                'questions_count' => count($questions),
+                'code_count' => count($code),
+                'categories' => $studySet->categories_json ?? [],
+                'created_at' => $studySet->created_at,
+                'updated_at' => $studySet->updated_at,
+            ]
+        ]);
+    }
+
+    /**
+     * Internal webhook for Python AI Service to report batch progress (0% - 100%).
+     */
+    public function updateProgressInternal(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'progress' => 'required|integer|min:0|max:100',
+            'status_message' => 'nullable|string|max:255',
+            'status' => 'nullable|string|in:processing,completed,failed',
+            'error_message' => 'nullable|string',
+        ]);
+
+        $studySet = StudySet::find($id);
+        if (!$studySet) {
+            return response()->json(['success' => false, 'message' => 'StudySet not found'], 404);
+        }
+
+        $updateData = [
+            'progress' => $validated['progress'],
+        ];
+
+        if (!empty($validated['status_message'])) {
+            $updateData['status_message'] = $validated['status_message'];
+        }
+
+        if (!empty($validated['status'])) {
+            $updateData['status'] = $validated['status'];
+        }
+
+        if (isset($validated['error_message'])) {
+            $updateData['error_message'] = $validated['error_message'];
+        }
+
+        $studySet->update($updateData);
+
+        return response()->json(['success' => true]);
     }
 
     /**

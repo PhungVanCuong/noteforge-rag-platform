@@ -19,6 +19,10 @@ class StudySet extends Model
         'questions_json',
         'code_exercises_json',
         'is_public',
+        'status',
+        'progress',
+        'status_message',
+        'error_message',
     ];
 
     protected $casts = [
@@ -26,6 +30,7 @@ class StudySet extends Model
         'questions_json' => 'array',
         'code_exercises_json' => 'array',
         'is_public' => 'boolean',
+        'progress' => 'integer',
     ];
 
     protected static function boot()

@@ -128,12 +128,31 @@ class QuizGenerator:
         cls,
         file_path: Optional[str] = None,
         raw_text: Optional[str] = None,
-        api_key: Optional[str] = None
+        api_key: Optional[str] = None,
+        callback_url: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Processes document or text, handles multi-batch chunking if large (8,000 chars/batch),
-        and aggregates into a single standardized Study Set schema.
+        reports live progress back to Laravel via callback_url, and aggregates into a single standardized Study Set schema.
         """
+        def report_progress(percent: int, message: str):
+            if callback_url:
+                try:
+                    import httpx
+                    with httpx.Client(timeout=4.0) as client:
+                        client.post(
+                            callback_url,
+                            json={
+                                "progress": int(percent),
+                                "status_message": str(message),
+                                "status": "processing"
+                            }
+                        )
+                except Exception as cb_err:
+                    logger.warning(f"Failed to report progress to {callback_url}: {cb_err}")
+
+        report_progress(15, "Đang bóc tách và phân tích cấu trúc tài liệu...")
+
         extracted_text = ""
         if file_path:
             extracted_text = cls.extract_full_text(file_path)
@@ -172,17 +191,26 @@ class QuizGenerator:
             if current_batch:
                 batches.append("\n\n".join(current_batch))
 
-        logger.info(f"Splitting document ({len(text)} chars) into {len(batches)} batches for AI processing...")
+        total_batches = len(batches)
+        logger.info(f"Splitting document ({len(text)} chars) into {total_batches} batches for AI processing...")
+        report_progress(20, f"Bắt đầu trích xuất câu hỏi qua {total_batches} phần tài liệu...")
 
         combined_categories: List[str] = []
         cat_index_map: Dict[str, int] = {}
         combined_questions: List[Dict[str, Any]] = []
         combined_code_exercises: List[Dict[str, Any]] = []
+        seen_question_texts = set()
 
         last_batch_error = None
         for b_idx, batch_text in enumerate(batches):
             try:
-                logger.info(f"Processing batch {b_idx + 1}/{len(batches)}...")
+                current_percent = int(20 + (b_idx / total_batches) * 60)
+                report_progress(
+                    current_percent,
+                    f"AI đang trích xuất câu hỏi và biên soạn bài tập (Phần {b_idx + 1}/{total_batches})..."
+                )
+                logger.info(f"Processing batch {b_idx + 1}/{total_batches}...")
+
                 chunk_data = cls.generate_quiz_chunk(batch_text, api_key=api_key)
                 chunk_cats = chunk_data.get("categories", [])
 
@@ -196,14 +224,27 @@ class QuizGenerator:
                         combined_categories.append(clean_cat)
                     local_to_global_cat[local_idx] = cat_index_map[clean_cat]
 
-                # Adjust questions
+                # Adjust and deduplicate questions
                 for q in chunk_data.get("questions", []):
+                    en_text = str(q.get("en", "")).strip()
+                    norm_key = re.sub(r"\s+", " ", en_text.lower())
+                    if norm_key and norm_key in seen_question_texts:
+                        continue  # Skip duplicate question across chunks
+                    if norm_key:
+                        seen_question_texts.add(norm_key)
+
                     old_cat = q.get("cat", 0)
                     q["cat"] = local_to_global_cat.get(old_cat, 0)
                     combined_questions.append(q)
 
                 # Append code exercises
                 combined_code_exercises.extend(chunk_data.get("code_exercises", []))
+
+                done_percent = int(20 + ((b_idx + 1) / total_batches) * 60)
+                report_progress(
+                    done_percent,
+                    f"Đã xử lý xong phần {b_idx + 1}/{total_batches} ({len(combined_questions)} câu trắc nghiệm)..."
+                )
             except Exception as e:
                 logger.error(f"Error processing batch {b_idx + 1}: {e}")
                 last_batch_error = e
@@ -215,12 +256,16 @@ class QuizGenerator:
                 f"Gemini AI không trích xuất được câu hỏi nào từ tài liệu. Chi tiết lỗi: {last_batch_error or 'Dữ liệu trả về rỗng'}"
             )
 
+        report_progress(85, "Đang tổng hợp kết quả và chuẩn hóa dữ liệu câu hỏi...")
+
         # Re-index questions sequentially
         for idx, q in enumerate(combined_questions):
             q["id"] = f"Q{idx + 1}"
 
         if not combined_categories:
             combined_categories = ["Tổng hợp kiến thức"]
+
+        report_progress(95, "Đang kiểm tra tính toàn vẹn và hoàn tất bộ đề...")
 
         return cls._standardize_data({
             "categories": combined_categories,

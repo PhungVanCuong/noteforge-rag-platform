@@ -123,7 +123,9 @@ class AiServiceBridge
     public function generateQuiz(
         ?string $filePath = null,
         ?string $rawText = null,
-        ?User $user = null
+        ?User $user = null,
+        ?int $studySetId = null,
+        ?string $callbackUrl = null
     ): array {
         $apiKey = $this->resolveApiKey($user);
 
@@ -136,15 +138,24 @@ class AiServiceBridge
             'file_path' => $filePath,
             'raw_text' => $rawText,
             'api_key' => $apiKey,
+            'study_set_id' => $studySetId,
+            'callback_url' => $callbackUrl,
         ];
 
-        $response = Http::withHeaders($headers)->timeout(180)->post("{$this->baseUrl}/api/quiz/generate", $payload);
+        // 600s (10 minutes) timeout to eliminate Guzzle execution timeout
+        $response = Http::withHeaders($headers)
+            ->connectTimeout(30)
+            ->timeout(600)
+            ->post("{$this->baseUrl}/api/quiz/generate", $payload);
 
         // Fallback to system key if user key failed
         if ($response->failed() && !empty($user) && $apiKey !== $this->systemApiKey && !empty($this->systemApiKey)) {
             Log::warning('AI Bridge Generate Quiz failed with user custom key, falling back to system key...');
             $payload['api_key'] = $this->systemApiKey;
-            $response = Http::withHeaders(['X-Gemini-Api-Key' => $this->systemApiKey])->timeout(180)->post("{$this->baseUrl}/api/quiz/generate", $payload);
+            $response = Http::withHeaders(['X-Gemini-Api-Key' => $this->systemApiKey])
+                ->connectTimeout(30)
+                ->timeout(600)
+                ->post("{$this->baseUrl}/api/quiz/generate", $payload);
         }
 
         if ($response->failed()) {
