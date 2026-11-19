@@ -26,7 +26,7 @@ class AiServiceBridge
                 return $userKey;
             }
         }
-        return !empty($this->systemApiKey) ? $this->systemApiKey : null;
+        return !empty($this->systemApiKey) ? $this->systemApiKey : config('services.gemini.key', env('GEMINI_API_KEY'));
     }
 
     public function ingestDocument(
@@ -44,14 +44,23 @@ class AiServiceBridge
             $headers['X-Gemini-Api-Key'] = $apiKey;
         }
 
-        $response = Http::withHeaders($headers)->timeout(180)->post("{$this->baseUrl}/api/rag/ingest", [
+        $payload = [
             'file_path' => $filePath,
             'file_name' => $fileName,
             'notebook_id' => $notebookId,
             'document_id' => $documentId,
             'user_id' => $userId,
             'api_key' => $apiKey,
-        ]);
+        ];
+
+        $response = Http::withHeaders($headers)->timeout(180)->post("{$this->baseUrl}/api/rag/ingest", $payload);
+
+        // Fallback to system key if user key failed
+        if ($response->failed() && !empty($user) && $apiKey !== $this->systemApiKey && !empty($this->systemApiKey)) {
+            Log::warning('AI Bridge Ingest failed with user custom key, falling back to system key...');
+            $payload['api_key'] = $this->systemApiKey;
+            $response = Http::withHeaders(['X-Gemini-Api-Key' => $this->systemApiKey])->timeout(180)->post("{$this->baseUrl}/api/rag/ingest", $payload);
+        }
 
         if ($response->failed()) {
             Log::error('AI Bridge Ingest Failed', ['response' => $response->body()]);
@@ -75,13 +84,22 @@ class AiServiceBridge
             $headers['X-Gemini-Api-Key'] = $apiKey;
         }
 
-        $response = Http::withHeaders($headers)->timeout(60)->post("{$this->baseUrl}/api/rag/chat", [
+        $payload = [
             'question' => $question,
             'notebook_id' => $notebookId,
             'api_key' => $apiKey,
             'top_k' => $topK,
             'similarity_threshold' => $similarityThreshold,
-        ]);
+        ];
+
+        $response = Http::withHeaders($headers)->timeout(60)->post("{$this->baseUrl}/api/rag/chat", $payload);
+
+        // Fallback to system key if user key failed
+        if ($response->failed() && !empty($user) && $apiKey !== $this->systemApiKey && !empty($this->systemApiKey)) {
+            Log::warning('AI Bridge Chat failed with user custom key, falling back to system key...');
+            $payload['api_key'] = $this->systemApiKey;
+            $response = Http::withHeaders(['X-Gemini-Api-Key' => $this->systemApiKey])->timeout(60)->post("{$this->baseUrl}/api/rag/chat", $payload);
+        }
 
         if ($response->failed()) {
             Log::error('AI Bridge Chat Failed', ['response' => $response->body()]);
@@ -114,11 +132,20 @@ class AiServiceBridge
             $headers['X-Gemini-Api-Key'] = $apiKey;
         }
 
-        $response = Http::withHeaders($headers)->timeout(180)->post("{$this->baseUrl}/api/quiz/generate", [
+        $payload = [
             'file_path' => $filePath,
             'raw_text' => $rawText,
             'api_key' => $apiKey,
-        ]);
+        ];
+
+        $response = Http::withHeaders($headers)->timeout(180)->post("{$this->baseUrl}/api/quiz/generate", $payload);
+
+        // Fallback to system key if user key failed
+        if ($response->failed() && !empty($user) && $apiKey !== $this->systemApiKey && !empty($this->systemApiKey)) {
+            Log::warning('AI Bridge Generate Quiz failed with user custom key, falling back to system key...');
+            $payload['api_key'] = $this->systemApiKey;
+            $response = Http::withHeaders(['X-Gemini-Api-Key' => $this->systemApiKey])->timeout(180)->post("{$this->baseUrl}/api/quiz/generate", $payload);
+        }
 
         if ($response->failed()) {
             Log::error('AI Bridge Quiz Generation Failed', ['response' => $response->body()]);

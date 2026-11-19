@@ -13,6 +13,11 @@ import google.generativeai as genai
 
 import config
 
+try:
+    from .ai_client import generate_with_fallback, get_embedding_with_fallback
+except ImportError:
+    from ai_client import generate_with_fallback, get_embedding_with_fallback
+
 GROUNDED_SYSTEM_PROMPT = """Bạn là Trợ lý Học tập Học thuật chuyên sâu của hệ thống RAG Study Platform. Nhiệm vụ của bạn là giải đáp câu hỏi của sinh viên DỰA TRÊN DUY NHẤT các đoạn trích tài liệu nội bộ được cung cấp trong phần [NGỮ CẢNH TÀI LIỆU].
 
 QUY TẮC BẮT BUỘC (VI PHẠM SẼ BỊ TỪ CHỐI):
@@ -159,38 +164,12 @@ class RagService:
         return pages_data
 
     def get_embedding(self, text: str, api_key: Optional[str] = None) -> List[float]:
-        """Generate vector embedding using Gemini models/text-embedding-004."""
-        active_key = api_key or config.GEMINI_API_KEY
-        if not active_key:
-            raise ValueError("Gemini API key is required for embedding generation.")
-            
-        genai.configure(api_key=active_key)
-        response = genai.embed_content(
-            model=config.EMBEDDING_MODEL,
-            content=text,
-            task_type="retrieval_document"
-        )
-        return response['embedding']
+        """Generate vector embedding using Gemini with fallback."""
+        return get_embedding_with_fallback(text=text, api_key=api_key)
 
     def get_embeddings_batch(self, texts: List[str], api_key: Optional[str] = None) -> List[List[float]]:
         """Batch generate vector embeddings."""
-        active_key = api_key or config.GEMINI_API_KEY
-        if not active_key:
-            raise ValueError("Gemini API key is required for embedding generation.")
-            
-        genai.configure(api_key=active_key)
-        embeddings = []
-        batch_size = 20
-        for i in range(0, len(texts), batch_size):
-            batch = texts[i:i + batch_size]
-            response = genai.embed_content(
-                model=config.EMBEDDING_MODEL,
-                content=batch,
-                task_type="retrieval_document"
-            )
-            if "embedding" in response:
-                embeddings.extend(response["embedding"])
-        return embeddings
+        return [get_embedding_with_fallback(text=t, api_key=api_key) for t in texts]
 
     def ingest_document(
         self,
@@ -281,15 +260,8 @@ class RagService:
         if not active_key:
             raise ValueError("Gemini API key is required for RAG query.")
 
-        genai.configure(api_key=active_key)
-
         # 1. Embed user question
-        q_emb_resp = genai.embed_content(
-            model=config.EMBEDDING_MODEL,
-            content=question,
-            task_type="retrieval_query"
-        )
-        query_embedding = q_emb_resp['embedding']
+        query_embedding = get_embedding_with_fallback(text=question, api_key=active_key)
 
         # 2. Query isolated ChromaDB collection for this notebook
         collection = self.get_collection(notebook_id)
@@ -332,18 +304,20 @@ class RagService:
                 "chunks_retrieved": 0
             }
 
-        # 4. Synthesize answer with Gemini 2.5 Flash
+        # 4. Synthesize answer with Gemini Fallback
         context_block = "\n".join(retrieved_chunks)
         prompt = GROUNDED_SYSTEM_PROMPT.format(
             retrieved_chunks_with_metadata=context_block,
             user_question=question
         )
 
-        model = genai.GenerativeModel(config.CHAT_MODEL)
-        response = model.generate_content(prompt)
+        answer_text = generate_with_fallback(
+            api_key=active_key,
+            prompt=prompt
+        )
 
         return {
-            "answer": response.text.strip(),
+            "answer": answer_text.strip(),
             "is_grounded": True,
             "citations": citations,
             "chunks_retrieved": len(retrieved_chunks)

@@ -59,6 +59,18 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/tts-reader',
+    name: 'tts-reader',
+    component: () => import('@/views/TtsReaderView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/profile',
+    name: 'profile',
+    component: () => import('@/views/ProfileView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/study/:slug',
     name: 'shared-study',
     component: () => import('@/views/SharedStudyView.vue'),

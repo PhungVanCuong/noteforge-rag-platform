@@ -24,30 +24,31 @@
         <nav class="hidden md:flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10">
           <router-link
             to="/dashboard"
-            class="px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all text-gray-300 hover:text-white"
+            class="px-3 py-1.5 text-xs font-semibold rounded-md transition-all text-gray-300 hover:text-white"
             active-class="bg-blueprint-accent !text-blueprint-dark shadow-sm font-bold"
           >
             🏠 Tổng quan
           </router-link>
           <router-link
-            to="/dashboard"
-            class="px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all text-gray-300 hover:text-white"
-          >
-            📚 Không gian Môn học
-          </router-link>
-          <router-link
             to="/converter"
-            class="px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all text-gray-300 hover:text-white"
+            class="px-3 py-1.5 text-xs font-semibold rounded-md transition-all text-gray-300 hover:text-white"
             active-class="bg-blueprint-accent !text-blueprint-dark shadow-sm font-bold"
           >
-            🔄 Trạm Chuyển Đổi
+            🔄 Chuyển Đổi
           </router-link>
           <router-link
             to="/study-sets"
-            class="px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all text-gray-300 hover:text-white"
+            class="px-3 py-1.5 text-xs font-semibold rounded-md transition-all text-gray-300 hover:text-white"
             active-class="bg-blueprint-accent !text-blueprint-dark shadow-sm font-bold"
           >
             ✍️ Kho Đề Ôn Tập
+          </router-link>
+          <router-link
+            to="/tts-reader"
+            class="px-3 py-1.5 text-xs font-semibold rounded-md transition-all text-gray-300 hover:text-white"
+            active-class="bg-blueprint-accent !text-blueprint-dark shadow-sm font-bold"
+          >
+            🔊 Đọc Văn Bản
           </router-link>
         </nav>
 
@@ -55,7 +56,7 @@
         <div class="flex items-center gap-3">
           <!-- Gemini Key Status Pill -->
           <router-link
-            to="/settings"
+            to="/profile"
             class="px-2.5 py-1 rounded-full text-[11px] font-mono flex items-center gap-1.5 border transition-all hover:scale-105"
             :class="authStore.hasCustomGeminiKey 
               ? 'bg-emerald-950/80 text-emerald-300 border-emerald-600/60' 
@@ -68,7 +69,22 @@
           </router-link>
 
           <div v-if="authStore.user" class="flex items-center gap-2">
-            <span class="text-xs font-bold text-white hidden lg:inline">{{ authStore.user.name }}</span>
+            <router-link
+              to="/profile"
+              class="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/10 transition-colors"
+              title="Quản lý hồ sơ & cài đặt"
+            >
+              <img
+                v-if="authStore.user.avatar"
+                :src="authStore.user.avatar"
+                alt="Avatar"
+                class="w-7 h-7 rounded-full object-cover border border-blueprint-accent"
+              />
+              <span v-else class="w-7 h-7 rounded-full bg-blueprint flex items-center justify-center text-xs font-bold text-white">
+                {{ authStore.user.name?.charAt(0) || 'U' }}
+              </span>
+              <span class="text-xs font-bold text-white hidden lg:inline max-w-[120px] truncate">{{ authStore.user.name }}</span>
+            </router-link>
             <button
               @click="handleLogout"
               class="px-2.5 py-1 text-xs font-semibold bg-red-950/50 hover:bg-red-800 text-red-200 border border-red-800/60 rounded-md transition-colors"
@@ -88,7 +104,7 @@
 
     <!-- Mobile Fixed Bottom Navigation Bar (md:hidden) -->
     <nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-blueprint-dark/95 backdrop-blur-lg border-t-2 border-blueprint-accent text-white shadow-2xl pb-safe">
-      <div class="grid grid-cols-4 h-14">
+      <div class="grid grid-cols-5 h-14">
         <router-link
           to="/dashboard"
           class="flex flex-col items-center justify-center text-[10px] font-medium text-gray-400 hover:text-white transition-colors"
@@ -96,14 +112,6 @@
         >
           <span class="text-base mb-0.5">🏠</span>
           <span>Trang chủ</span>
-        </router-link>
-
-        <router-link
-          to="/dashboard"
-          class="flex flex-col items-center justify-center text-[10px] font-medium text-gray-400 hover:text-white transition-colors"
-        >
-          <span class="text-base mb-0.5">📚</span>
-          <span>Môn học</span>
         </router-link>
 
         <router-link
@@ -122,6 +130,24 @@
         >
           <span class="text-base mb-0.5">✍️</span>
           <span>Ôn thi</span>
+        </router-link>
+
+        <router-link
+          to="/tts-reader"
+          class="flex flex-col items-center justify-center text-[10px] font-medium text-gray-400 hover:text-white transition-colors"
+          active-class="!text-blueprint-accent font-bold bg-white/5"
+        >
+          <span class="text-base mb-0.5">🔊</span>
+          <span>Đọc bài</span>
+        </router-link>
+
+        <router-link
+          to="/profile"
+          class="flex flex-col items-center justify-center text-[10px] font-medium text-gray-400 hover:text-white transition-colors"
+          active-class="!text-blueprint-accent font-bold bg-white/5"
+        >
+          <span class="text-base mb-0.5">👤</span>
+          <span>Cá nhân</span>
         </router-link>
       </div>
     </nav>

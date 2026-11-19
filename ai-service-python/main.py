@@ -5,6 +5,7 @@ from typing import List, Optional
 from pathlib import Path
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks, status, Header
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -13,6 +14,8 @@ import config
 from converter_service import ConverterService
 from rag_service import RagService
 from quiz_generator import QuizGenerator
+from tts_service import TtsService
+from ai_client import generate_with_fallback
 
 app = FastAPI(
     title="NoteForge AI & Document Microservice",
@@ -58,6 +61,15 @@ class QuizGeneratePayload(BaseModel):
     file_path: Optional[str] = None
     raw_text: Optional[str] = None
     api_key: Optional[str] = None
+
+class TtsSynthesizePayload(BaseModel):
+    text: str
+    lang: str = "auto"
+    voice: Optional[str] = None
+    rate: float = 1.0
+
+class TestKeyPayload(BaseModel):
+    api_key: str
 
 class MergePdfPayload(BaseModel):
     input_files: List[str]
@@ -268,6 +280,53 @@ def transcribe_lecture_endpoint(payload: TranscribePayload):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# -----------------------------------------------------------------------------
+# Text-to-Speech (TTS) Endpoints
+# -----------------------------------------------------------------------------
+@app.post("/api/tts/synthesize")
+async def tts_synthesize_endpoint(payload: TtsSynthesizePayload):
+    try:
+        res = await TtsService.synthesize_speech(
+            text=payload.text,
+            lang=payload.lang,
+            voice=payload.voice,
+            rate=payload.rate
+        )
+        return {"success": True, "data": res}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/tts/audio/{file_name}")
+def get_tts_audio_endpoint(file_name: str):
+    file_path = os.path.join(config.STORAGE_DIR, "tts", file_name)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Audio file not found")
+    return FileResponse(file_path, media_type="audio/mpeg", filename=file_name)
+
+@app.post("/api/extract-text")
+async def extract_text_endpoint(file: UploadFile = File(...)):
+    try:
+        ext = Path(file.filename).suffix
+        safe_name = f"ext_{uuid.uuid4().hex[:8]}{ext}"
+        target_path = os.path.join(config.STORAGE_DIR, "uploads", safe_name)
+        with open(target_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        text = QuizGenerator.extract_full_text(target_path)
+        return {"success": True, "text": text, "file_name": file.filename}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Không thể trích xuất văn bản: {str(e)}")
+
+@app.post("/api/gemini/test-key")
+def test_gemini_key_endpoint(payload: TestKeyPayload):
+    try:
+        res = generate_with_fallback(
+            api_key=payload.api_key,
+            prompt="Say 'API_KEY_VALID' in one word."
+        )
+        return {"success": True, "message": "API Key hợp lệ và hoạt động bình thường!", "response": res.strip()}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"API Key không hợp lệ hoặc lỗi xác thực: {str(e)}")
 
 # Direct file upload endpoint for frontend testing/convenience
 @app.post("/api/upload")

@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 setlocal EnableDelayedExpansion
 title NoteForge AI - Unified One-Click Launcher
 color 0B
@@ -51,10 +52,9 @@ echo [*] [2/5] Kiem tra va dong bo Co so du lieu MySQL [noteforge_db]...
 where mysql >nul 2>nul
 if %ERRORLEVEL% equ 0 (
     mysql -u root -e "CREATE DATABASE IF NOT EXISTS noteforge_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>nul
-    mysql -u root noteforge_db < "%ROOT_DIR%database.sql" 2>nul
-    echo [OK] Da kiem tra va dong bo CSDL noteforge_db tu database.sql!
+    echo [OK] Co so du lieu noteforge_db da san sang!
 ) else (
-    echo [INFO] mysql CLI khong co tren PATH, se su dung Laravel Migration...
+    echo [INFO] mysql CLI khong co tren PATH, Laravel Migration se tu dong xu ly...
 )
 
 REM 4. Backend Dependencies and Migration
@@ -68,8 +68,9 @@ if not exist ".env" (
     copy .env.example .env >nul
     call php artisan key:generate
 )
-call php artisan migrate --force >nul 2>nul
-call php artisan db:seed --force >nul 2>nul
+call php artisan migrate --force
+call php artisan db:seed --force
+call php artisan optimize:clear >nul 2>nul
 echo [OK] Laravel Backend va CSDL da duoc dong bo san sang!
 echo.
 

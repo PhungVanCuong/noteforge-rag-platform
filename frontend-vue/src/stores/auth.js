@@ -101,17 +101,54 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async updateGeminiKey(apiKey) {
+    async updateProfile(formData) {
       this.loading = true
       try {
-        const response = await apiClient.post('/auth/gemini-key', { gemini_key: apiKey })
-        if (this.user) {
-          this.user.has_custom_key = response.data.has_custom_key
+        const response = await apiClient.post('/user/profile', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'X-HTTP-Method-Override': 'PUT',
+          },
+        })
+        if (response.data.user) {
+          this.user = { ...this.user, ...response.data.user }
           localStorage.setItem('noteforge_user', JSON.stringify(this.user))
         }
         return response.data
-      } catch (err) {
-        throw err
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async changePassword(currentPassword, newPassword, confirmPassword) {
+      this.loading = true
+      try {
+        const response = await apiClient.put('/user/password', {
+          current_password: currentPassword,
+          new_password: newPassword,
+          new_password_confirmation: confirmPassword,
+        })
+        return response.data
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async testGeminiKey(apiKey) {
+      const response = await apiClient.post('/user/gemini-key/test', { gemini_key: apiKey })
+      return response.data
+    },
+
+    async updateGeminiKey(apiKey) {
+      this.loading = true
+      try {
+        const response = await apiClient.put('/user/gemini-key', { gemini_key: apiKey })
+        if (this.user) {
+          this.user.has_custom_key = response.data.has_custom_key
+          this.user.masked_key = response.data.masked_key
+          localStorage.setItem('noteforge_user', JSON.stringify(this.user))
+        }
+        return response.data
       } finally {
         this.loading = false
       }
@@ -119,7 +156,7 @@ export const useAuthStore = defineStore('auth', {
 
     logout() {
       if (this.token) {
-        apiClient.post('/auth/logout').catch(() => {})
+        apiClient.post('/logout').catch(() => {})
       }
       this.user = null
       this.token = null

@@ -9,8 +9,8 @@ load_dotenv(dotenv_path=env_path)
 HOST: str = os.getenv("HOST", "0.0.0.0")
 PORT: int = int(os.getenv("PORT", "8001"))
 GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "models/text-embedding-004")
-CHAT_MODEL: str = os.getenv("CHAT_MODEL", "gemini-2.5-flash")
+EMBEDDING_MODEL: str = os.getenv("GEMINI_EMBEDDING_MODEL", os.getenv("EMBEDDING_MODEL", "models/text-embedding-004"))
+CHAT_MODEL: str = os.getenv("GEMINI_MODEL", os.getenv("CHAT_MODEL", "gemini-3.8-flash"))
 
 CHROMA_PERSIST_DIR: str = os.getenv(
     "CHROMA_PERSIST_DIR",
@@ -38,3 +38,4 @@ Path(STORAGE_DIR).mkdir(parents=True, exist_ok=True)
 Path(STORAGE_DIR, "uploads").mkdir(parents=True, exist_ok=True)
 Path(STORAGE_DIR, "conversions").mkdir(parents=True, exist_ok=True)
 Path(STORAGE_DIR, "transcripts").mkdir(parents=True, exist_ok=True)
+Path(STORAGE_DIR, "tts").mkdir(parents=True, exist_ok=True)

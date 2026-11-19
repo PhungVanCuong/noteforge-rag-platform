@@ -30,6 +30,8 @@ class User extends Authenticatable
 
     protected $appends = [
         'has_custom_key',
+        'has_google',
+        'masked_key',
     ];
 
     protected function casts(): array
@@ -43,6 +45,18 @@ class User extends Authenticatable
     public function getHasCustomKeyAttribute(): bool
     {
         return !empty($this->custom_gemini_key);
+    }
+
+    public function getHasGoogleAttribute(): bool
+    {
+        return !empty($this->google_id);
+    }
+
+    public function getMaskedKeyAttribute(): ?string
+    {
+        $raw = $this->getDecryptedGeminiKey();
+        if (!$raw || strlen($raw) < 8) return null;
+        return substr($raw, 0, 6) . '...' . substr($raw, -4);
     }
 
     public function setCustomGeminiKeyAttribute(?string $value): void

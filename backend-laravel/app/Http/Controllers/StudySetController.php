@@ -90,20 +90,31 @@ class StudySetController extends Controller
                 user: $request->user()
             );
 
+            $questions = $quizData['questions'] ?? [];
+            $codeExercises = $quizData['code_exercises'] ?? [];
+
+            // Chặn tuyệt đối lưu bộ đề rỗng 0 câu • 0 code
+            if (empty($questions) && empty($codeExercises)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'AI không tìm thấy hoặc không trích xuất được câu hỏi nào từ nội dung tài liệu. Vui lòng kiểm tra lại tệp tải lên.'
+                ], 422);
+            }
+
             $studySet = StudySet::create([
                 'notebook_id' => $request->notebook_id,
                 'user_id' => $request->user()->id,
                 'share_slug' => (string) Str::uuid(),
                 'title' => $title,
-                'categories_json' => $quizData['categories'] ?? ['Tổng hợp'],
-                'questions_json' => $quizData['questions'] ?? [],
-                'code_exercises_json' => $quizData['code_exercises'] ?? [],
+                'categories_json' => $quizData['categories'] ?? ['Tổng hợp kiến thức'],
+                'questions_json' => $questions,
+                'code_exercises_json' => $codeExercises,
                 'is_public' => true,
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Hệ thống đã chuyển hóa tài liệu thành Bộ đề ôn tập tương tác thành công!',
+                'message' => "Hệ thống đã chuyển hóa thành công bộ đề với " . count($questions) . " câu trắc nghiệm và " . count($codeExercises) . " bài tập code!",
                 'data' => $studySet,
             ], 201);
         } catch (Exception $e) {
@@ -253,6 +264,23 @@ class StudySetController extends Controller
         return response($html, 200, [
             'Content-Type' => 'text/html; charset=utf-8',
             'Content-Disposition' => "attachment; filename=\"{$safeSlug}_offline.html\"",
+        ]);
+    }
+
+    /**
+     * Delete study set.
+     */
+    public function destroy(Request $request, $id)
+    {
+        $studySet = StudySet::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->firstOrFail();
+
+        $studySet->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã xóa bộ đề ôn tập thành công.'
         ]);
     }
 }

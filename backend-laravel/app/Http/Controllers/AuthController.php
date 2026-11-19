@@ -267,9 +267,88 @@ class AuthController extends Controller
      */
     public function me(Request $request)
     {
+        $user = $request->user();
         return response()->json([
             'success' => true,
-            'user' => $request->user(),
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar' => $user->avatar,
+                'has_google' => $user->has_google,
+                'has_custom_key' => $user->has_custom_key,
+                'masked_key' => $user->masked_key,
+                'has_password' => !empty($user->password),
+                'email_verified_at' => $user->email_verified_at,
+                'created_at' => $user->created_at,
+            ],
+        ]);
+    }
+
+    /**
+     * Update user profile (name, avatar).
+     */
+    public function updateProfile(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'avatar' => 'nullable|image|max:5120',
+        ]);
+
+        $user = $request->user();
+        $user->name = $validated['name'];
+
+        if ($request->hasFile('avatar')) {
+            $avatarFile = $request->file('avatar');
+            $avatarName = 'avatar_' . $user->id . '_' . time() . '.' . $avatarFile->getClientOriginalExtension();
+            $destPath = storage_path('app/public/avatars');
+            if (!file_exists($destPath)) {
+                mkdir($destPath, 0755, true);
+            }
+            $avatarFile->move($destPath, $avatarName);
+            $user->avatar = url("/storage/avatars/{$avatarName}");
+        }
+
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật thông tin hồ sơ thành công!',
+            'user' => $user,
+        ]);
+    }
+
+    /**
+     * Change user password.
+     */
+    public function changePassword(Request $request)
+    {
+        $user = $request->user();
+
+        $rules = [
+            'new_password' => 'required|string|min:6|confirmed',
+        ];
+
+        // If user already has a password, current password is required
+        if (!empty($user->password)) {
+            $rules['current_password'] = 'required|string';
+        }
+
+        $validated = $request->validate($rules);
+
+        if (!empty($user->password) && !Hash::check($validated['current_password'], $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mật khẩu hiện tại không chính xác.'
+            ], 422);
+        }
+
+        $user->password = Hash::make($validated['new_password']);
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đổi mật khẩu thành công! Vui lòng sử dụng mật khẩu mới cho lần đăng nhập tiếp theo.'
         ]);
     }
 
@@ -283,14 +362,61 @@ class AuthController extends Controller
         ]);
 
         $user = $request->user();
-        $user->custom_gemini_key = $request->gemini_key;
+        $user->custom_gemini_key = $request->gemini_key ? trim($request->gemini_key) : null;
         $user->save();
 
         return response()->json([
             'success' => true,
-            'message' => $request->gemini_key ? 'Đã lưu API Key Gemini cá nhân thành công (mã hóa an toàn).' : 'Đã xóa API Key cá nhân. Hệ thống sẽ sử dụng key mặc định.',
+            'message' => $request->gemini_key ? 'Đã lưu API Key Gemini cá nhân thành công (mã hóa AES-256 an toàn).' : 'Đã xóa API Key cá nhân. Hệ thống sẽ sử dụng key mặc định.',
             'has_custom_key' => $user->has_custom_key,
+            'masked_key' => $user->masked_key,
         ]);
+    }
+
+    /**
+     * Test a Gemini API Key against AI service.
+     */
+    public function testGeminiKey(Request $request)
+    {
+        $request->validate([
+            'gemini_key' => 'nullable|string',
+        ]);
+
+        $keyToTest = $request->gemini_key ? trim($request->gemini_key) : $request->user()->getDecryptedGeminiKey();
+        if (empty($keyToTest)) {
+            $keyToTest = env('GEMINI_API_KEY', '');
+        }
+
+        if (empty($keyToTest)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chưa có API Key nào được nhập hoặc cấu hình trong hệ thống.'
+            ], 422);
+        }
+
+        try {
+            $aiUrl = rtrim(env('AI_SERVICE_URL', 'http://127.0.0.1:8001'), '/');
+            $response = \Illuminate\Support\Facades\Http::timeout(15)->post("{$aiUrl}/api/gemini/test-key", [
+                'api_key' => $keyToTest,
+            ]);
+
+            if ($response->successful()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Kết nối thành công! API Key hoạt động bình thường với Gemini Model.'
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Kiểm tra thất bại: ' . ($response->json('detail') ?? $response->body())
+            ], 400);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể kết nối tới AI Microservice để kiểm tra: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -298,7 +424,9 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        if ($request->user() && $request->user()->currentAccessToken()) {
+            $request->user()->currentAccessToken()->delete();
+        }
 
         return response()->json([
             'success' => true,

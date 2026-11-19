@@ -126,9 +126,19 @@ export const useStudyStore = defineStore('study', {
       }
     },
 
+    async deleteStudySet(id) {
+      try {
+        await apiClient.delete(`/study-sets/${id}`)
+        this.studySets = this.studySets.filter((s) => s.id !== id)
+      } catch (err) {
+        throw err
+      }
+    },
+
     getOfflineHtmlUrl(idOrSlug) {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
-      return `${baseUrl}/study-sets/${idOrSlug}/export-html`
+      const rawBase = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000'
+      const apiBase = rawBase.endsWith('/api') ? rawBase : `${rawBase.replace(/\/+$/, '')}/api`
+      return `${apiBase}/study-sets/${idOrSlug}/export-html`
     },
   },
 })

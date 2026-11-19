@@ -206,7 +206,7 @@ class ConverterService:
         # Upload file to Gemini Files API
         uploaded_file = genai.upload_file(path=target_file)
         
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        model = genai.GenerativeModel(config.CHAT_MODEL)
         prompt = (
             "Bạn là chuyên gia bóc băng bài giảng học thuật. Hãy nghe kỹ toàn bộ tệp âm thanh này "
             "và chuyển thể chính xác 100% nội dung giảng viên/người thuyết trình sang tiếng Việt văn bản.\n\n"

@@ -15,8 +15,8 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- -----------------------------------------------------------------------------
 -- 1. Table: users
 -- -----------------------------------------------------------------------------
-DROP TABLE IF EXISTS `users`;
-CREATE TABLE `users` (
+-- DROP TABLE IF EXISTS `users`;
+CREATE TABLE IF NOT EXISTS `users` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(255) NOT NULL,
   `email` VARCHAR(255) NOT NULL,
@@ -36,8 +36,8 @@ CREATE TABLE `users` (
 -- -----------------------------------------------------------------------------
 -- 2. Table: email_otps
 -- -----------------------------------------------------------------------------
-DROP TABLE IF EXISTS `email_otps`;
-CREATE TABLE `email_otps` (
+-- DROP TABLE IF EXISTS `email_otps`;
+CREATE TABLE IF NOT EXISTS `email_otps` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `email` VARCHAR(255) NOT NULL,
   `otp_code` VARCHAR(255) NOT NULL,
@@ -53,8 +53,8 @@ CREATE TABLE `email_otps` (
 -- -----------------------------------------------------------------------------
 -- 3. Table: notebooks
 -- -----------------------------------------------------------------------------
-DROP TABLE IF EXISTS `notebooks`;
-CREATE TABLE `notebooks` (
+-- DROP TABLE IF EXISTS `notebooks`;
+CREATE TABLE IF NOT EXISTS `notebooks` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id` BIGINT UNSIGNED NOT NULL,
   `title` VARCHAR(255) NOT NULL,
@@ -70,8 +70,8 @@ CREATE TABLE `notebooks` (
 -- -----------------------------------------------------------------------------
 -- 4. Table: documents
 -- -----------------------------------------------------------------------------
-DROP TABLE IF EXISTS `documents`;
-CREATE TABLE `documents` (
+-- DROP TABLE IF EXISTS `documents`;
+CREATE TABLE IF NOT EXISTS `documents` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `notebook_id` BIGINT UNSIGNED NOT NULL,
   `user_id` BIGINT UNSIGNED NOT NULL,
@@ -94,8 +94,8 @@ CREATE TABLE `documents` (
 -- -----------------------------------------------------------------------------
 -- 5. Table: conversion_jobs
 -- -----------------------------------------------------------------------------
-DROP TABLE IF EXISTS `conversion_jobs`;
-CREATE TABLE `conversion_jobs` (
+-- DROP TABLE IF EXISTS `conversion_jobs`;
+CREATE TABLE IF NOT EXISTS `conversion_jobs` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id` BIGINT UNSIGNED NOT NULL,
   `tool_type` ENUM('pdf2word', 'word2pdf', 'merge_pdf', 'split_pdf', 'img_convert', 'img2pdf', 'vid2mp3', 'transcribe') NOT NULL,
@@ -114,8 +114,8 @@ CREATE TABLE `conversion_jobs` (
 -- -----------------------------------------------------------------------------
 -- 6. Table: study_sets
 -- -----------------------------------------------------------------------------
-DROP TABLE IF EXISTS `study_sets`;
-CREATE TABLE `study_sets` (
+-- DROP TABLE IF EXISTS `study_sets`;
+CREATE TABLE IF NOT EXISTS `study_sets` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `notebook_id` BIGINT UNSIGNED NULL DEFAULT NULL,
   `user_id` BIGINT UNSIGNED NOT NULL,
@@ -138,8 +138,8 @@ CREATE TABLE `study_sets` (
 -- -----------------------------------------------------------------------------
 -- 7. Table: question_progress
 -- -----------------------------------------------------------------------------
-DROP TABLE IF EXISTS `question_progress`;
-CREATE TABLE `question_progress` (
+-- DROP TABLE IF EXISTS `question_progress`;
+CREATE TABLE IF NOT EXISTS `question_progress` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id` BIGINT UNSIGNED NOT NULL,
   `study_set_id` BIGINT UNSIGNED NOT NULL,
@@ -159,8 +159,8 @@ CREATE TABLE `question_progress` (
 -- -----------------------------------------------------------------------------
 -- 8. Table: exam_attempts
 -- -----------------------------------------------------------------------------
-DROP TABLE IF EXISTS `exam_attempts`;
-CREATE TABLE `exam_attempts` (
+-- DROP TABLE IF EXISTS `exam_attempts`;
+CREATE TABLE IF NOT EXISTS `exam_attempts` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id` BIGINT UNSIGNED NOT NULL,
   `study_set_id` BIGINT UNSIGNED NOT NULL,
@@ -181,8 +181,8 @@ CREATE TABLE `exam_attempts` (
 -- -----------------------------------------------------------------------------
 -- 9. Table: personal_access_tokens (Laravel Sanctum)
 -- -----------------------------------------------------------------------------
-DROP TABLE IF EXISTS `personal_access_tokens`;
-CREATE TABLE `personal_access_tokens` (
+-- DROP TABLE IF EXISTS `personal_access_tokens`;
+CREATE TABLE IF NOT EXISTS `personal_access_tokens` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `tokenable_type` VARCHAR(255) NOT NULL,
   `tokenable_id` BIGINT UNSIGNED NOT NULL,
@@ -201,16 +201,16 @@ CREATE TABLE `personal_access_tokens` (
 -- -----------------------------------------------------------------------------
 -- 10. Table: cache & cache_locks (Laravel Database Cache Driver)
 -- -----------------------------------------------------------------------------
-DROP TABLE IF EXISTS `cache`;
-CREATE TABLE `cache` (
+-- DROP TABLE IF EXISTS `cache`;
+CREATE TABLE IF NOT EXISTS `cache` (
   `key` VARCHAR(255) NOT NULL,
   `value` MEDIUMTEXT NOT NULL,
   `expiration` INT NOT NULL,
   PRIMARY KEY (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-DROP TABLE IF EXISTS `cache_locks`;
-CREATE TABLE `cache_locks` (
+-- DROP TABLE IF EXISTS `cache_locks`;
+CREATE TABLE IF NOT EXISTS `cache_locks` (
   `key` VARCHAR(255) NOT NULL,
   `owner` VARCHAR(255) NOT NULL,
   `expiration` INT NOT NULL,
@@ -220,8 +220,8 @@ CREATE TABLE `cache_locks` (
 -- -----------------------------------------------------------------------------
 -- 11. Table: sessions (Laravel Database Session Driver)
 -- -----------------------------------------------------------------------------
-DROP TABLE IF EXISTS `sessions`;
-CREATE TABLE `sessions` (
+-- DROP TABLE IF EXISTS `sessions`;
+CREATE TABLE IF NOT EXISTS `sessions` (
   `id` VARCHAR(255) NOT NULL,
   `user_id` BIGINT UNSIGNED NULL DEFAULT NULL,
   `ip_address` VARCHAR(45) NULL DEFAULT NULL,
@@ -236,8 +236,8 @@ CREATE TABLE `sessions` (
 -- -----------------------------------------------------------------------------
 -- 12. Tables: jobs, job_batches, failed_jobs (Laravel Queue Database Driver)
 -- -----------------------------------------------------------------------------
-DROP TABLE IF EXISTS `jobs`;
-CREATE TABLE `jobs` (
+-- DROP TABLE IF EXISTS `jobs`;
+CREATE TABLE IF NOT EXISTS `jobs` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `queue` VARCHAR(255) NOT NULL,
   `payload` LONGTEXT NOT NULL,
@@ -249,8 +249,8 @@ CREATE TABLE `jobs` (
   KEY `jobs_queue_index` (`queue`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-DROP TABLE IF EXISTS `job_batches`;
-CREATE TABLE `job_batches` (
+-- DROP TABLE IF EXISTS `job_batches`;
+CREATE TABLE IF NOT EXISTS `job_batches` (
   `id` VARCHAR(255) NOT NULL,
   `name` VARCHAR(255) NOT NULL,
   `total_jobs` INT NOT NULL,
@@ -264,8 +264,8 @@ CREATE TABLE `job_batches` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-DROP TABLE IF EXISTS `failed_jobs`;
-CREATE TABLE `failed_jobs` (
+-- DROP TABLE IF EXISTS `failed_jobs`;
+CREATE TABLE IF NOT EXISTS `failed_jobs` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `uuid` VARCHAR(255) NOT NULL,
   `connection` TEXT NOT NULL,

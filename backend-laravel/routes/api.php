@@ -33,11 +33,23 @@ Route::get('/study-sets/{idOrSlug}/export-html', [StudySetController::class, 'ex
 // Protected Routes (Sanctum Authenticated)
 Route::middleware('auth:sanctum')->group(function () {
 
-    // User Profile & Settings
+    // User Profile, Security & Gemini Key
+    Route::get('/user', [AuthController::class, 'me']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::prefix('user')->group(function () {
+        Route::get('/profile', [AuthController::class, 'me']);
+        Route::put('/profile', [AuthController::class, 'updateProfile']);
+        Route::put('/password', [AuthController::class, 'changePassword']);
+        Route::put('/gemini-key', [AuthController::class, 'updateGeminiKey']);
+        Route::post('/gemini-key/test', [AuthController::class, 'testGeminiKey']);
+    });
+
     Route::prefix('auth')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/gemini-key', [AuthController::class, 'updateGeminiKey']);
+        Route::put('/gemini-key', [AuthController::class, 'updateGeminiKey']);
+        Route::post('/gemini-key/test', [AuthController::class, 'testGeminiKey']);
     });
 
     // Notebooks (Workspaces)
@@ -81,5 +93,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}/progress', [StudySetController::class, 'getProgress']);
         Route::post('/{id}/exam-attempt', [StudySetController::class, 'submitExamAttempt']);
         Route::get('/{id}/attempts', [StudySetController::class, 'listAttempts']);
+        Route::delete('/{id}', [StudySetController::class, 'destroy']);
     });
 });

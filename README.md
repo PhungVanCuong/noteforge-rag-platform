@@ -22,6 +22,15 @@
   3. *Luyện gõ code / Điền khuyết (`[[...]]`):* Tự động biến `[[keyword]]` thành ô `<input>` co giãn độ rộng, kiểm tra xanh/đỏ và xem đáp án.
   4. *Thẻ ghi nhớ Flashcards 3D:* Lật mặt trước/sau 3D, hỗ trợ vuốt chuyển thẻ.
   5. *Xuất bản Offline & Chia sẻ:* Link công khai `/study/{share_slug}` và nút tải file `.html` độc lập (Single-file Offline) học không cần mạng.
+- **Trạm Đọc Văn Bản Thông Minh (Text-to-Speech Studio - `/tts-reader`):**
+  - Đọc tài liệu tự động đa ngôn ngữ: Tiếng Việt giọng chuẩn (`vi-VN-HoaiMyNeural` / `vi-VN-NamMinhNeural`), Tiếng Anh (`en-US-JennyNeural` / `en-US-GuyNeural`), Hàn, Nhật, Trung...
+  - Hỗ trợ tải tệp Word `.docx`, PDF, `.txt` bóc tách văn bản tức thì.
+  - Chế độ đọc Karaoke highlight từng câu theo thời gian thực, nhấp vào câu bất kỳ để đọc từ vị trí đó.
+  - Tải file MP3 chất lượng cao về máy học tập ngoại tuyến.
+- **Quản Lý Hồ Sơ & Bảo Mật Khóa API (`/profile`):**
+  - Cập nhật thông tin cá nhân, tải ảnh đại diện Avatar mới.
+  - Đổi mật khẩu tài khoản an toàn.
+  - Cấu hình và kiểm thử tức thì Google Gemini API Key riêng biệt với nút **"Kiểm tra kết nối"** trực tiếp lên máy chủ Google AI. Khóa được mã hóa hai chiều AES-256 trong CSDL. Tự động fallback về khóa hệ thống nếu khóa cá nhân lỗi quota.
 
 ---
 
@@ -30,7 +39,7 @@
 ### 2.1 Sơ Đồ Kiến Trúc Luồng Dữ Liệu
 
 ```plaintext
-[ Vue 3 SPA (Vite + Pinia + Tailwind + Blueprint Study UI) ]
+[ Vue 3 SPA (Vite + Pinia + Tailwind + Blueprint Study UI + Mobile LAN) ]
        │  (REST API / Sanctum Token / Cổng 5173)
        ▼
 [ Laravel 11 Backend Core (PHP 8.2+ Cổng 8000) ] ◄────► [ MySQL 8.0 (Database: noteforge_db) ]
@@ -42,8 +51,9 @@
    ▼
 [ Python AI & Media Engine (FastAPI Cổng 8001) ]
    ├──► [ Converter Hub ]: LibreOffice Headless, pdf2docx, PyMuPDF (Merge/Split), Pillow, FFmpeg
-   ├──► [ RAG Pipeline ]: PyMuPDF/Docx Page Extractor -> Semantic Chunker (900/150) -> Gemini Embedding (text-embedding-004) -> ChromaDB
-   └──► [ Quiz & Cloze Generator ]: Gemini 2.5 Flash (Structured JSON Output) -> Sinh đề & Code đục lỗ [[từ_khóa]]
+   ├──► [ RAG Pipeline ]: PyMuPDF/Docx Page Extractor -> Semantic Chunker -> Gemini Embedding (text-embedding-004) -> ChromaDB
+   ├──► [ Quiz & Cloze Generator ]: Gemini 3.8 Flash (Auto Fallback Chain) -> Bóc tách 100% câu hỏi kể cả Table Word -> Sinh đề & Code [[từ_khóa]]
+   └──► [ Text-to-Speech Studio ]: Edge-TTS (Chất lượng cao tiếng Việt/Anh) + gTTS Fallback -> Phát Audio Karaoke & Tải MP3
 ```
 
 ### 2.2 Cấu Trúc 8 Bảng Dữ Liệu MySQL Cốt Lõi
