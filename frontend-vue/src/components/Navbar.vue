@@ -5,9 +5,11 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <!-- Logo & Brand -->
         <router-link to="/dashboard" class="flex items-center gap-3 group">
-          <div class="w-10 h-10 rounded-lg bg-blueprint-accent flex items-center justify-center font-bold text-blueprint-dark text-xl shadow-md group-hover:scale-105 transition-transform">
-            ⚡
-          </div>
+          <img
+            src="/favicon.png"
+            alt="NoteForge AI"
+            class="w-10 h-10 rounded-xl shadow-lg border border-blueprint-accent/40 group-hover:scale-105 group-hover:ring-2 group-hover:ring-blueprint-accent transition-all object-cover"
+          />
           <div>
             <div class="font-bold text-lg tracking-wide text-white flex items-center gap-2">
               <span>NoteForge</span>
@@ -16,7 +18,7 @@
                 v1.0
               </span>
             </div>
-            <p class="text-[11px] text-gray-400 font-mono hidden sm:block">RAG Study & Converter Platform</p>
+            <p class="text-[11px] text-gray-300 font-mono hidden sm:block">KHO BỘ ĐỀ & KHÔNG GIAN MÔN HỌC</p>
           </div>
         </router-link>
 
