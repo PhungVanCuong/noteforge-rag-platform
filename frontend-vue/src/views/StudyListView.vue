@@ -105,9 +105,18 @@
               <span>{{ new Date(set.created_at).toLocaleDateString('vi-VN') }}</span>
             </div>
 
-            <h3 class="text-lg font-bold text-blueprint-dark line-clamp-2 group-hover:text-blueprint transition-colors mb-2">
-              {{ set.title }}
-            </h3>
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <h3 class="text-lg font-bold text-blueprint-dark line-clamp-2 group-hover:text-blueprint transition-colors flex-1">
+                {{ set.title }}
+              </h3>
+              <button
+                @click="openRenameModal(set)"
+                class="p-1 rounded text-gray-400 hover:text-blueprint hover:bg-blueprint/10 transition-colors shrink-0"
+                title="Đổi tên bộ đề"
+              >
+                ✏️
+              </button>
+            </div>
 
             <div class="flex flex-wrap gap-1 mb-4">
               <span
@@ -379,6 +388,52 @@
       </div>
     </div>
 
+    <!-- Rename Study Set Modal -->
+    <div
+      v-if="showRenameModal"
+      class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+    >
+      <div class="blueprint-card max-w-md w-full p-6 shadow-2xl">
+        <div class="flex items-center justify-between mb-4 border-b border-blueprint-paperBorder pb-3">
+          <h3 class="text-base font-bold text-blueprint-dark flex items-center gap-1.5">
+            <span>✏️</span> Đổi Tên Bộ Đề
+          </h3>
+          <button @click="showRenameModal = false" class="text-gray-400 hover:text-gray-700 font-bold text-lg">
+            ✕
+          </button>
+        </div>
+
+        <form @submit.prevent="handleSaveRename" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-blueprint-dark mb-1">Tên bộ đề mới *</label>
+            <input
+              v-model="renameTitle"
+              type="text"
+              required
+              class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 text-xs bg-white focus:ring-2 focus:ring-blueprint outline-none font-semibold text-gray-800"
+            />
+          </div>
+
+          <div class="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              @click="showRenameModal = false"
+              class="px-4 py-2 rounded-lg border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-100"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              :disabled="renaming || !renameTitle.trim()"
+              class="px-5 py-2 rounded-lg bg-blueprint hover:bg-blueprint-light text-white text-xs font-bold shadow disabled:opacity-50"
+            >
+              {{ renaming ? 'Đang lưu...' : 'Lưu tên mới' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Mini Floating Badge (Shown when modal is minimized during generation) -->
     <div
       v-if="generating && !showGenerateModal"
@@ -422,6 +477,33 @@ const genProgress = ref(0)
 const genStatusMessage = ref('')
 const genError = ref('')
 const createdSuccessSet = ref(null)
+
+// Rename Study Set State
+const showRenameModal = ref(false)
+const editingSetId = ref(null)
+const renameTitle = ref('')
+const renaming = ref(false)
+
+const openRenameModal = (set) => {
+  editingSetId.value = set.id
+  renameTitle.value = set.title || ''
+  showRenameModal.value = true
+}
+
+const handleSaveRename = async () => {
+  if (!renameTitle.value.trim() || !editingSetId.value) return
+  renaming.value = true
+  try {
+    await studyStore.updateStudySet(editingSetId.value, {
+      title: renameTitle.value.trim(),
+    })
+    showRenameModal.value = false
+  } catch (err) {
+    alert(err.response?.data?.message || 'Đổi tên bộ đề thất bại.')
+  } finally {
+    renaming.value = false
+  }
+}
 
 let pollTimer = null
 let elapsedTimer = null

@@ -33,6 +33,12 @@ Route::get('/study-sets/{idOrSlug}/export-html', [StudySetController::class, 'ex
 // Public Document Stream & Download (with Token support in query for iframes)
 Route::get('/documents/{id}/download', [DocumentController::class, 'download']);
 
+// Advanced Text-to-Speech (TTS) Studio Audio Stream & Synthesis
+Route::post('/tts/synthesize', [ConverterController::class, 'synthesizeTts']);
+Route::get('/tts/audio/{fileName}', [ConverterController::class, 'getTtsAudio']);
+Route::get('/tts/voices', [ConverterController::class, 'getTtsVoices']);
+Route::post('/extract-text', [ConverterController::class, 'extractText']);
+
 // Protected Routes (Sanctum Authenticated)
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -97,6 +103,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}/progress', [StudySetController::class, 'getProgress']);
         Route::post('/{id}/exam-attempt', [StudySetController::class, 'submitExamAttempt']);
         Route::get('/{id}/attempts', [StudySetController::class, 'listAttempts']);
+        Route::put('/{id}', [StudySetController::class, 'update']);
         Route::delete('/{id}', [StudySetController::class, 'destroy']);
     });
 });

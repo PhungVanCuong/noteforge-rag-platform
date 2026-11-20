@@ -301,6 +301,10 @@ async def tts_synthesize_endpoint(payload: TtsSynthesizePayload):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/tts/voices")
+def get_tts_voices_endpoint():
+    return {"success": True, "voices": TtsService.get_voices()}
+
 @app.get("/api/tts/audio/{file_name}")
 def get_tts_audio_endpoint(file_name: str):
     file_path = os.path.join(config.STORAGE_DIR, "tts", file_name)

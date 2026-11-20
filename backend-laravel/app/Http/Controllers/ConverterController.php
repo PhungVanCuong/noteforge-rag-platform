@@ -316,4 +316,111 @@ class ConverterController extends Controller
         $file->move($dest, $name);
         return $dest . DIRECTORY_SEPARATOR . $name;
     }
+
+    /**
+     * Get available TTS voices.
+     */
+    public function getTtsVoices()
+    {
+        $voices = [
+            ["id" => "vi-VN-HoaiMyNeural", "name" => "Hoài My (Nữ VN - Chuẩn Song Ngữ Anh-Việt)", "lang" => "vi-VN", "badge" => "Song Ngữ ⭐"],
+            ["id" => "vi-VN-NamMinhNeural", "name" => "Nam Minh (Nam VN - Trầm Ấm, Truyền Cảm)", "lang" => "vi-VN", "badge" => "Song Ngữ ⭐"],
+            ["id" => "en-US-JennyNeural", "name" => "Jenny (Nữ US - Tự Nhiên, Trôi Chảy)", "lang" => "en-US", "badge" => "Tiếng Anh Mỹ"],
+            ["id" => "en-US-GuyNeural", "name" => "Guy (Nam US - Chuẩn Giảng Viên)", "lang" => "en-US", "badge" => "Tiếng Anh Mỹ"],
+            ["id" => "en-US-AriaNeural", "name" => "Aria (Nữ US - Thuyết Trình Tin Tức)", "lang" => "en-US", "badge" => "Tiếng Anh Mỹ"],
+            ["id" => "en-GB-SoniaNeural", "name" => "Sonia (Nữ UK - Giọng Anh-Anh Quý Tộc)", "lang" => "en-GB", "badge" => "Tiếng Anh Anh"],
+            ["id" => "ja-JP-NanamiNeural", "name" => "Nanami (Nữ Nhật Bản)", "lang" => "ja-JP", "badge" => "Tiếng Nhật"],
+            ["id" => "ko-KR-SunHiNeural", "name" => "Sun-Hi (Nữ Hàn Quốc)", "lang" => "ko-KR", "badge" => "Tiếng Hàn"],
+            ["id" => "zh-CN-XiaoxiaoNeural", "name" => "Xiaoxiao (Nữ Trung Quốc)", "lang" => "zh-CN", "badge" => "Tiếng Trung"],
+            ["id" => "fr-FR-DeniseNeural", "name" => "Denise (Nữ Pháp)", "lang" => "fr-FR", "badge" => "Tiếng Pháp"],
+        ];
+        return response()->json(["success" => true, "voices" => $voices]);
+    }
+
+    /**
+     * Synthesize Text-to-Speech using Python Edge-TTS Neural Engine.
+     */
+    public function synthesizeTts(Request $request)
+    {
+        $validated = $request->validate([
+            'text' => 'required|string|min:1',
+            'lang' => 'nullable|string',
+            'voice' => 'nullable|string',
+            'rate' => 'nullable|numeric|min:0.5|max:2.5',
+        ]);
+
+        try {
+            $data = $this->aiBridge->synthesizeTts(
+                text: $validated['text'],
+                lang: $validated['lang'] ?? 'auto',
+                voice: $validated['voice'] ?? null,
+                rate: (float) ($validated['rate'] ?? 1.0)
+            );
+
+            // Construct full public playback URL
+            $baseUrl = rtrim(config('app.url', 'http://localhost:8000'), '/');
+            $fileName = $data['file_name'] ?? '';
+            $playbackUrl = "{$baseUrl}/api/tts/audio/{$fileName}";
+
+            return response()->json([
+                'success' => true,
+                'data' => array_merge($data, [
+                    'playback_url' => $playbackUrl,
+                ]),
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi tổng hợp giọng đọc: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Stream or download generated TTS audio file.
+     */
+    public function getTtsAudio(Request $request, $fileName)
+    {
+        try {
+            $response = $this->aiBridge->getTtsAudioStream($fileName);
+            if ($response->failed()) {
+                return response()->json(['success' => false, 'message' => 'Tệp âm thanh không tồn tại.'], 404);
+            }
+
+            return response($response->body(), 200, [
+                'Content-Type' => 'audio/mpeg',
+                'Content-Disposition' => 'inline; filename="' . basename($fileName) . '"',
+                'Cache-Control' => 'public, max-age=86400',
+            ]);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Extract raw text from uploaded Word, PDF, TXT for TTS reader.
+     */
+    public function extractText(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:txt,docx,doc,pdf|max:20480',
+        ]);
+
+        $storedPath = $this->storeTempFile($request->file('file'));
+
+        try {
+            $text = $this->aiBridge->extractTextFromFile($storedPath);
+            return response()->json([
+                'success' => true,
+                'text' => $text,
+                'file_name' => $request->file('file')->getClientOriginalName(),
+            ]);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        } finally {
+            if (file_exists($storedPath)) {
+                @unlink($storedPath);
+            }
+        }
+    }
 }

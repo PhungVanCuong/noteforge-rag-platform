@@ -2,6 +2,18 @@
   <div class="min-h-screen pb-20">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
 
+      <!-- Toast Notification -->
+      <transition name="fade">
+        <div
+          v-if="toast.show"
+          :class="toast.type === 'success' ? 'bg-emerald-900/90 text-emerald-200 border-emerald-500' : 'bg-red-900/90 text-red-200 border-red-500'"
+          class="fixed top-20 right-6 z-50 px-4 py-3 rounded-xl border text-xs font-bold shadow-2xl flex items-center gap-2 backdrop-blur-md"
+        >
+          <span>{{ toast.type === 'success' ? '✅' : '❌' }}</span>
+          <span>{{ toast.message }}</span>
+        </div>
+      </transition>
+
       <!-- ========================================== -->
       <!-- TOP HERO & WELCOME BANNER                  -->
       <!-- ========================================== -->
@@ -157,9 +169,19 @@
                 <span>{{ new Date(set.created_at).toLocaleDateString('vi-VN') }}</span>
               </div>
 
-              <h3 class="text-base font-bold text-blueprint-dark line-clamp-2 group-hover:text-blueprint transition-colors mb-2">
-                {{ set.title }}
-              </h3>
+              <!-- Title & Rename Button -->
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <h3 class="text-base font-bold text-blueprint-dark line-clamp-2 group-hover:text-blueprint transition-colors flex-1">
+                  {{ set.title }}
+                </h3>
+                <button
+                  @click="openRenameStudySetModal(set)"
+                  class="p-1 rounded text-gray-400 hover:text-blueprint hover:bg-blueprint/10 transition-colors shrink-0"
+                  title="Đổi tên bộ đề này"
+                >
+                  ✏️
+                </button>
+              </div>
 
               <!-- Categories Tags -->
               <div class="flex flex-wrap gap-1 mb-4">
@@ -276,9 +298,19 @@
                 </span>
               </div>
 
-              <h3 class="text-base sm:text-lg font-bold text-blueprint-dark line-clamp-1 group-hover:text-blueprint transition-colors">
-                {{ nb.title }}
-              </h3>
+              <!-- Title & Rename Button -->
+              <div class="flex items-start justify-between gap-2">
+                <h3 class="text-base sm:text-lg font-bold text-blueprint-dark line-clamp-1 group-hover:text-blueprint transition-colors flex-1">
+                  {{ nb.title }}
+                </h3>
+                <button
+                  @click="openRenameNotebookModal(nb)"
+                  class="p-1 rounded text-gray-400 hover:text-blueprint hover:bg-blueprint/10 transition-colors shrink-0"
+                  title="Chỉnh sửa tên & thông tin môn học"
+                >
+                  ✏️
+                </button>
+              </div>
 
               <p class="text-xs text-gray-600 mt-2 line-clamp-2 leading-relaxed min-h-[32px]">
                 {{ nb.description || 'Chưa có mô tả cho môn học này.' }}
@@ -378,6 +410,117 @@
         </form>
       </div>
     </div>
+
+    <!-- Rename Study Set Modal -->
+    <div
+      v-if="showRenameStudySetModal"
+      class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+    >
+      <div class="blueprint-card max-w-md w-full p-6 shadow-2xl">
+        <div class="flex items-center justify-between mb-4 border-b border-blueprint-paperBorder pb-3">
+          <h3 class="text-base font-bold text-blueprint-dark flex items-center gap-1.5">
+            <span>✏️</span> Đổi Tên Bộ Đề Ôn Tập
+          </h3>
+          <button @click="showRenameStudySetModal = false" class="text-gray-400 hover:text-gray-700 font-bold text-lg">
+            ✕
+          </button>
+        </div>
+
+        <form @submit.prevent="handleSaveRenameStudySet" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-blueprint-dark mb-1">Tên bộ đề mới *</label>
+            <input
+              v-model="renameStudySetTitle"
+              type="text"
+              required
+              class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 text-xs bg-white focus:ring-2 focus:ring-blueprint outline-none font-semibold text-gray-800"
+            />
+          </div>
+
+          <div class="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              @click="showRenameStudySetModal = false"
+              class="px-4 py-2 rounded-lg border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-100"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              :disabled="renamingStudySet || !renameStudySetTitle.trim()"
+              class="px-5 py-2 rounded-lg bg-blueprint hover:bg-blueprint-light text-white text-xs font-bold shadow disabled:opacity-50"
+            >
+              {{ renamingStudySet ? 'Đang lưu...' : 'Lưu tên mới' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Rename Notebook Modal -->
+    <div
+      v-if="showRenameNotebookModal"
+      class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+    >
+      <div class="blueprint-card max-w-md w-full p-6 shadow-2xl">
+        <div class="flex items-center justify-between mb-4 border-b border-blueprint-paperBorder pb-3">
+          <h3 class="text-base font-bold text-blueprint-dark flex items-center gap-1.5">
+            <span>✏️</span> Chỉnh Sửa Môn Học
+          </h3>
+          <button @click="showRenameNotebookModal = false" class="text-gray-400 hover:text-gray-700 font-bold text-lg">
+            ✕
+          </button>
+        </div>
+
+        <form @submit.prevent="handleSaveRenameNotebook" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-blueprint-dark mb-1">Tên môn học *</label>
+            <input
+              v-model="renameNotebookTitle"
+              type="text"
+              required
+              class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 text-xs bg-white focus:ring-2 focus:ring-blueprint outline-none font-semibold text-gray-800"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-blueprint-dark mb-1">Mã môn học</label>
+            <input
+              v-model="renameNotebookCode"
+              type="text"
+              class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 text-xs bg-white focus:ring-2 focus:ring-blueprint outline-none"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-blueprint-dark mb-1">Mô tả môn học</label>
+            <textarea
+              v-model="renameNotebookDesc"
+              rows="3"
+              class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 text-xs bg-white focus:ring-2 focus:ring-blueprint outline-none"
+            ></textarea>
+          </div>
+
+          <div class="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              @click="showRenameNotebookModal = false"
+              class="px-4 py-2 rounded-lg border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-100"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              :disabled="renamingNotebook || !renameNotebookTitle.trim()"
+              class="px-5 py-2 rounded-lg bg-blueprint hover:bg-blueprint-light text-white text-xs font-bold shadow disabled:opacity-50"
+            >
+              {{ renamingNotebook ? 'Đang lưu...' : 'Lưu thay đổi' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -396,6 +539,79 @@ const newTitle = ref('')
 const newCode = ref('')
 const newDesc = ref('')
 const creating = ref(false)
+
+// Toast notification state
+const toast = ref({ show: false, message: '', type: 'success' })
+let toastTimer = null
+const triggerToast = (message, type = 'success') => {
+  if (toastTimer) clearTimeout(toastTimer)
+  toast.value = { show: true, message, type }
+  toastTimer = setTimeout(() => {
+    toast.value.show = false
+  }, 3500)
+}
+
+// Rename Study Set State
+const showRenameStudySetModal = ref(false)
+const editingStudySetId = ref(null)
+const renameStudySetTitle = ref('')
+const renamingStudySet = ref(false)
+
+const openRenameStudySetModal = (set) => {
+  editingStudySetId.value = set.id
+  renameStudySetTitle.value = set.title || ''
+  showRenameStudySetModal.value = true
+}
+
+const handleSaveRenameStudySet = async () => {
+  if (!renameStudySetTitle.value.trim() || !editingStudySetId.value) return
+  renamingStudySet.value = true
+  try {
+    await studyStore.updateStudySet(editingStudySetId.value, {
+      title: renameStudySetTitle.value.trim(),
+    })
+    showRenameStudySetModal.value = false
+    triggerToast('Đổi tên bộ đề thành công!', 'success')
+  } catch (err) {
+    triggerToast(err.response?.data?.message || 'Đổi tên bộ đề thất bại.', 'error')
+  } finally {
+    renamingStudySet.value = false
+  }
+}
+
+// Rename Notebook State
+const showRenameNotebookModal = ref(false)
+const editingNotebookId = ref(null)
+const renameNotebookTitle = ref('')
+const renameNotebookCode = ref('')
+const renameNotebookDesc = ref('')
+const renamingNotebook = ref(false)
+
+const openRenameNotebookModal = (nb) => {
+  editingNotebookId.value = nb.id
+  renameNotebookTitle.value = nb.title || ''
+  renameNotebookCode.value = nb.subject_code || ''
+  renameNotebookDesc.value = nb.description || ''
+  showRenameNotebookModal.value = true
+}
+
+const handleSaveRenameNotebook = async () => {
+  if (!renameNotebookTitle.value.trim() || !editingNotebookId.value) return
+  renamingNotebook.value = true
+  try {
+    await notebookStore.updateNotebook(editingNotebookId.value, {
+      title: renameNotebookTitle.value.trim(),
+      subject_code: renameNotebookCode.value.trim(),
+      description: renameNotebookDesc.value.trim(),
+    })
+    showRenameNotebookModal.value = false
+    triggerToast('Cập nhật môn học thành công!', 'success')
+  } catch (err) {
+    triggerToast(err.response?.data?.message || 'Cập nhật môn học thất bại.', 'error')
+  } finally {
+    renamingNotebook.value = false
+  }
+}
 
 onMounted(async () => {
   await Promise.allSettled([
@@ -433,8 +649,9 @@ const handleCreateNotebook = async () => {
     newTitle.value = ''
     newCode.value = ''
     newDesc.value = ''
+    triggerToast('Tạo môn học mới thành công!', 'success')
   } catch (err) {
-    alert(err.response?.data?.message || 'Tạo môn học thất bại.')
+    triggerToast(err.response?.data?.message || 'Tạo môn học thất bại.', 'error')
   } finally {
     creating.value = false
   }
@@ -446,8 +663,9 @@ const handleDeleteNotebook = async (nb) => {
   }
   try {
     await notebookStore.deleteNotebook(nb.id)
+    triggerToast('Đã xóa môn học!', 'success')
   } catch (err) {
-    alert(err.response?.data?.message || 'Xóa môn học thất bại.')
+    triggerToast(err.response?.data?.message || 'Xóa môn học thất bại.', 'error')
   }
 }
 
@@ -457,8 +675,21 @@ const handleDeleteStudySet = async (set) => {
   }
   try {
     await studyStore.deleteStudySet(set.id)
+    triggerToast('Đã xóa bộ đề!', 'success')
   } catch (err) {
-    alert('Xóa bộ đề thất bại.')
+    triggerToast('Xóa bộ đề thất bại.', 'error')
   }
 }
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+</style>

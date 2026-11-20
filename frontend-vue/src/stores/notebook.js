@@ -52,6 +52,23 @@ export const useNotebookStore = defineStore('notebook', {
       }
     },
 
+    async updateNotebook(id, payload) {
+      try {
+        const response = await apiClient.put(`/notebooks/${id}`, payload)
+        const updated = response.data?.data
+        const idx = this.notebooks.findIndex((n) => n.id === id)
+        if (idx !== -1 && updated) {
+          this.notebooks[idx] = { ...this.notebooks[idx], ...updated }
+        }
+        if (this.currentNotebook && this.currentNotebook.id === id) {
+          this.currentNotebook = { ...this.currentNotebook, ...updated }
+        }
+        return updated
+      } catch (err) {
+        throw err
+      }
+    },
+
     async deleteNotebook(id) {
       try {
         await apiClient.delete(`/notebooks/${id}`)

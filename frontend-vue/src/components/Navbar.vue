@@ -30,18 +30,18 @@
             🏠 Tổng quan
           </router-link>
           <router-link
+            to="/study-sets"
+            class="px-3 py-1.5 text-xs font-semibold rounded-md transition-all text-gray-300 hover:text-white"
+            active-class="bg-blueprint-accent !text-blueprint-dark shadow-sm font-bold"
+          >
+            🎯 Kho Bộ Đề
+          </router-link>
+          <router-link
             to="/converter"
             class="px-3 py-1.5 text-xs font-semibold rounded-md transition-all text-gray-300 hover:text-white"
             active-class="bg-blueprint-accent !text-blueprint-dark shadow-sm font-bold"
           >
             🔄 Chuyển Đổi
-          </router-link>
-          <router-link
-            to="/study-sets"
-            class="px-3 py-1.5 text-xs font-semibold rounded-md transition-all text-gray-300 hover:text-white"
-            active-class="bg-blueprint-accent !text-blueprint-dark shadow-sm font-bold"
-          >
-            ✍️ Kho Đề Ôn Tập
           </router-link>
           <router-link
             to="/tts-reader"
@@ -115,21 +115,21 @@
         </router-link>
 
         <router-link
+          to="/study-sets"
+          class="flex flex-col items-center justify-center text-[10px] font-medium text-gray-400 hover:text-white transition-colors"
+          active-class="!text-blueprint-accent font-bold bg-white/5"
+        >
+          <span class="text-base mb-0.5">🎯</span>
+          <span>Kho Bộ Đề</span>
+        </router-link>
+
+        <router-link
           to="/converter"
           class="flex flex-col items-center justify-center text-[10px] font-medium text-gray-400 hover:text-white transition-colors"
           active-class="!text-blueprint-accent font-bold bg-white/5"
         >
           <span class="text-base mb-0.5">🔄</span>
           <span>Chuyển đổi</span>
-        </router-link>
-
-        <router-link
-          to="/study-sets"
-          class="flex flex-col items-center justify-center text-[10px] font-medium text-gray-400 hover:text-white transition-colors"
-          active-class="!text-blueprint-accent font-bold bg-white/5"
-        >
-          <span class="text-base mb-0.5">✍️</span>
-          <span>Ôn thi</span>
         </router-link>
 
         <router-link

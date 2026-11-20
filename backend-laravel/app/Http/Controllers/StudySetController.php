@@ -180,6 +180,36 @@ class StudySetController extends Controller
     }
 
     /**
+     * Update study set (rename title, update categories).
+     */
+    public function update(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'categories' => 'nullable|array',
+        ]);
+
+        $studySet = StudySet::where('id', $id)
+            ->where(function ($q) use ($request) {
+                $q->where('user_id', $request->user()->id)
+                  ->orWhereNull('user_id');
+            })
+            ->firstOrFail();
+
+        $studySet->title = trim($validated['title']);
+        if (isset($validated['categories'])) {
+            $studySet->categories_json = $validated['categories'];
+        }
+        $studySet->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật tên bộ đề thành công.',
+            'data' => $studySet
+        ]);
+    }
+
+    /**
      * Internal webhook for Python AI Service to report batch progress (0% - 100%).
      */
     public function updateProgressInternal(Request $request, $id)

@@ -134,6 +134,23 @@ export const useStudyStore = defineStore('study', {
       }
     },
 
+    async updateStudySet(id, payload) {
+      try {
+        const response = await apiClient.put(`/study-sets/${id}`, payload)
+        const updated = response.data?.data
+        const idx = this.studySets.findIndex((s) => s.id === id)
+        if (idx !== -1 && updated) {
+          this.studySets[idx] = { ...this.studySets[idx], ...updated }
+        }
+        if (this.currentStudySet && this.currentStudySet.id === id) {
+          this.currentStudySet = { ...this.currentStudySet, ...updated }
+        }
+        return updated
+      } catch (err) {
+        throw err
+      }
+    },
+
     async deleteStudySet(id) {
       try {
         await apiClient.delete(`/study-sets/${id}`)

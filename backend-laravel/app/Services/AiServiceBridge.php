@@ -267,4 +267,38 @@ class AiServiceBridge
 
         return $response->json();
     }
+
+    public function synthesizeTts(string $text, string $lang = 'auto', ?string $voice = null, float $rate = 1.0): array
+    {
+        $response = Http::timeout(180)->post("{$this->baseUrl}/api/tts/synthesize", [
+            'text' => $text,
+            'lang' => $lang,
+            'voice' => $voice,
+            'rate' => $rate,
+        ]);
+
+        if ($response->failed()) {
+            throw new Exception("TTS Synthesis failed: " . ($response->json('detail') ?? $response->body()));
+        }
+
+        return $response->json('data') ?? [];
+    }
+
+    public function getTtsAudioStream(string $fileName)
+    {
+        return Http::timeout(60)->get("{$this->baseUrl}/api/tts/audio/{$fileName}");
+    }
+
+    public function extractTextFromFile(string $filePath): string
+    {
+        $response = Http::timeout(120)->attach(
+            'file', file_get_contents($filePath), basename($filePath)
+        )->post("{$this->baseUrl}/api/extract-text");
+
+        if ($response->failed()) {
+            throw new Exception("Trích xuất văn bản thất bại: " . ($response->json('detail') ?? $response->body()));
+        }
+
+        return $response->json('text') ?? '';
+    }
 }
