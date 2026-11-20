@@ -30,6 +30,9 @@ Route::prefix('auth')->group(function () {
 Route::get('/study-sets/public/{slug}', [StudySetController::class, 'show']);
 Route::get('/study-sets/{idOrSlug}/export-html', [StudySetController::class, 'exportOfflineHtml']);
 
+// Public Document Stream & Download (with Token support in query for iframes)
+Route::get('/documents/{id}/download', [DocumentController::class, 'download']);
+
 // Protected Routes (Sanctum Authenticated)
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -38,7 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::prefix('user')->group(function () {
         Route::get('/profile', [AuthController::class, 'me']);
-        Route::put('/profile', [AuthController::class, 'updateProfile']);
+        Route::match(['put', 'post'], '/profile', [AuthController::class, 'updateProfile']);
         Route::put('/password', [AuthController::class, 'changePassword']);
         Route::put('/gemini-key', [AuthController::class, 'updateGeminiKey']);
         Route::post('/gemini-key/test', [AuthController::class, 'testGeminiKey']);
@@ -47,6 +50,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('auth')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/logout', [AuthController::class, 'logout']);
+        Route::match(['put', 'post'], '/profile', [AuthController::class, 'updateProfile']);
         Route::post('/gemini-key', [AuthController::class, 'updateGeminiKey']);
         Route::put('/gemini-key', [AuthController::class, 'updateGeminiKey']);
         Route::post('/gemini-key/test', [AuthController::class, 'testGeminiKey']);
@@ -64,7 +68,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Documents
     Route::prefix('documents')->group(function () {
-        Route::get('/{id}/download', [DocumentController::class, 'download']);
         Route::delete('/{id}', [DocumentController::class, 'destroy']);
         Route::post('/{id}/reindex', [DocumentController::class, 'reindex']);
     });

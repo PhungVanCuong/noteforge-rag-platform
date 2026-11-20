@@ -36,7 +36,7 @@
       </div>
 
       <!-- Tab Navigation -->
-      <div class="flex border-b border-white/10 mb-6 gap-2">
+      <div v-drag-scroll class="flex border-b border-white/10 mb-6 gap-2 overflow-x-auto whitespace-nowrap no-scrollbar select-none">
         <button
           @click="activeTab = 'profile'"
           :class="activeTab === 'profile' ? 'border-blueprint-accent text-blueprint-accent font-bold' : 'border-transparent text-gray-400 hover:text-gray-200'"

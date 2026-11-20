@@ -2,12 +2,12 @@
 
 use Laravel\Sanctum\Sanctum;
 
+$statefulDomains = env('SANCTUM_STATEFUL_DOMAINS');
+
 return [
-    'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
-        '%s%s',
-        'localhost,localhost:3000,127.0.0.1,127.0.0.1:3000,::1',
-        Sanctum::currentApplicationUrlWithPort()
-    ))),
+    'stateful' => !empty($statefulDomains) 
+        ? array_filter(array_map('trim', explode(',', $statefulDomains)))
+        : [],
 
     'guard' => ['web'],
 

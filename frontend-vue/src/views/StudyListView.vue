@@ -76,7 +76,7 @@
         <span class="inline-block animate-spin mr-2">⏳</span> Đang tải danh sách bộ đề ôn tập...
       </div>
 
-      <div v-else-if="studyStore.studySets.length === 0" class="blueprint-card p-12 text-center">
+      <div v-else-if="filteredStudySets.length === 0" class="blueprint-card p-12 text-center">
         <div class="text-4xl mb-3">🎯</div>
         <h3 class="text-base font-bold text-blueprint-dark mb-1">Chưa có bộ đề ôn tập nào</h3>
         <p class="text-xs text-gray-600 mb-5 max-w-sm mx-auto">
@@ -92,7 +92,7 @@
 
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div
-          v-for="set in studyStore.studySets"
+          v-for="set in filteredStudySets"
           :key="set.id"
           class="blueprint-card p-6 flex flex-col justify-between hover:shadow-xl transition-shadow group relative"
         >
@@ -426,6 +426,18 @@ const createdSuccessSet = ref(null)
 let pollTimer = null
 let elapsedTimer = null
 const elapsedSeconds = ref(0)
+
+const filteredStudySets = computed(() => {
+  return studyStore.studySets.filter(set => {
+    const qCount = set.questions_json?.length || 0
+    const cCount = set.code_exercises_json?.length || 0
+    const sCount = set.shorts_json?.length || 0
+    const eCount = set.essays_json?.length || 0
+    const total = qCount + cCount + sCount + eCount
+    if (set.status === 'processing') return true
+    return total > 0 && set.status === 'completed'
+  })
+})
 
 const displayStatusMessage = computed(() => {
   if (genStatusMessage.value) return genStatusMessage.value

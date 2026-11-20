@@ -17,5 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, $request) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated. Vui lòng đăng nhập để tiếp tục.'
+            ], 401);
+        });
     })->create();

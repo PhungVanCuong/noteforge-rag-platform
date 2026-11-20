@@ -278,7 +278,8 @@ const selectedDocument = computed(() => {
 const currentDocDownloadUrl = computed(() => {
   if (!selectedDocument.value) return null
   const apiBase = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/+$/, '')
-  return `${apiBase}/api/documents/${selectedDocument.value.id}/download`
+  const token = localStorage.getItem('noteforge_token') || localStorage.getItem('token') || ''
+  return `${apiBase}/api/documents/${selectedDocument.value.id}/download?token=${encodeURIComponent(token)}`
 })
 
 const onCitationClick = (citation) => {

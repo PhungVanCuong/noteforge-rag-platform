@@ -18,13 +18,51 @@ class DocumentController extends Controller
 
     public function download(Request $request, $id)
     {
-        $doc = $request->user()->documents()->findOrFail($id);
+        $user = $request->user();
 
-        if (!file_exists($doc->file_path)) {
-            return response()->json(['success' => false, 'message' => 'Tệp không tồn tại trên máy chủ.'], 404);
+        // Support authentication via query parameter ?token= for iframe and native PDF viewers
+        if (!$user && $request->has('token')) {
+            $tokenStr = $request->query('token');
+            $pat = \Laravel\Sanctum\PersonalAccessToken::findToken($tokenStr);
+            if ($pat && $pat->tokenable) {
+                $user = $pat->tokenable;
+            }
         }
 
-        return response()->download($doc->file_path, $doc->file_name);
+        $doc = Document::with('notebook')->find($id);
+        if (!$doc) {
+            return response()->json(['success' => false, 'message' => 'Không tìm thấy tài liệu.'], 404);
+        }
+
+        // Authorization check: Document owner or notebook owner
+        if ($user) {
+            $isOwner = ($doc->user_id === $user->id) || ($doc->notebook && $doc->notebook->user_id === $user->id);
+            if (!$isOwner) {
+                return response()->json(['success' => false, 'message' => 'Bạn không có quyền truy cập tài liệu này.'], 403);
+            }
+        } else {
+            return response()->json(['success' => false, 'message' => 'Vui lòng xác thực tài khoản để xem tài liệu.'], 401);
+        }
+
+        if (!file_exists($doc->file_path)) {
+            return response()->json(['success' => false, 'message' => 'Tệp không tồn tại trên máy chủ lưu trữ.'], 404);
+        }
+
+        // If forced download
+        if ($request->boolean('download')) {
+            return response()->download($doc->file_path, $doc->file_name);
+        }
+
+        // Stream inline for PDF Iframe and in-browser preview
+        $mime = 'application/pdf';
+        if (function_exists('mime_content_type')) {
+            $mime = @mime_content_type($doc->file_path) ?: 'application/pdf';
+        }
+
+        return response()->file($doc->file_path, [
+            'Content-Type' => $mime,
+            'Content-Disposition' => 'inline; filename="' . basename($doc->file_name) . '"',
+        ]);
     }
 
     public function destroy(Request $request, $id)

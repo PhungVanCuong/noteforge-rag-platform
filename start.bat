@@ -70,6 +70,7 @@ if not exist ".env" (
 )
 call php artisan migrate --force
 call php artisan db:seed --force
+call php artisan storage:link >nul 2>nul
 call php artisan optimize:clear >nul 2>nul
 echo [OK] Laravel Backend va CSDL da duoc dong bo san sang!
 echo.

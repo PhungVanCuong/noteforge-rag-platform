@@ -254,7 +254,7 @@ class AuthController extends Controller
             $token = $user->createToken('spa')->plainTextToken;
             $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
 
-            return redirect("{$frontendUrl}/auth/callback?token={$token}&name=" . urlencode($user->name));
+            return redirect("{$frontendUrl}/auth/callback?token={$token}&name=" . urlencode($user->name) . "&avatar=" . urlencode($user->avatar ?? ''));
         } catch (\Exception $e) {
             Log::error('Google OAuth callback error: ' . $e->getMessage());
             $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
@@ -286,13 +286,14 @@ class AuthController extends Controller
     }
 
     /**
-     * Update user profile (name, avatar).
+     * Update user profile (name, avatar file or URL).
      */
     public function updateProfile(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'avatar' => 'nullable|image|max:5120',
+            'avatar' => 'nullable|image|max:10240',
+            'avatar_url' => 'nullable|string|url|max:1000',
         ]);
 
         $user = $request->user();
@@ -306,15 +307,29 @@ class AuthController extends Controller
                 mkdir($destPath, 0755, true);
             }
             $avatarFile->move($destPath, $avatarName);
-            $user->avatar = url("/storage/avatars/{$avatarName}");
+            $baseUrl = rtrim(config('app.url', 'http://localhost:8000'), '/');
+            $user->avatar = "{$baseUrl}/storage/avatars/{$avatarName}";
+        } elseif (!empty($validated['avatar_url'])) {
+            $user->avatar = $validated['avatar_url'];
         }
 
         $user->save();
 
         return response()->json([
             'success' => true,
-            'message' => 'Cập nhật thông tin hồ sơ thành công!',
-            'user' => $user,
+            'message' => 'Cập nhật ảnh đại diện và thông tin hồ sơ thành công!',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar' => $user->avatar,
+                'has_google' => $user->has_google,
+                'has_custom_key' => $user->has_custom_key,
+                'masked_key' => $user->masked_key,
+                'has_password' => !empty($user->password),
+                'email_verified_at' => $user->email_verified_at,
+                'created_at' => $user->created_at,
+            ],
         ]);
     }
 
