@@ -8,9 +8,10 @@ load_dotenv(dotenv_path=env_path)
 
 HOST: str = os.getenv("HOST", "0.0.0.0")
 PORT: int = int(os.getenv("PORT", "8001"))
+LARAVEL_INTERNAL_URL: str = os.getenv("LARAVEL_INTERNAL_URL", "http://127.0.0.1:8000")
 GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-EMBEDDING_MODEL: str = os.getenv("GEMINI_EMBEDDING_MODEL", os.getenv("EMBEDDING_MODEL", "models/text-embedding-004"))
-CHAT_MODEL: str = os.getenv("GEMINI_MODEL", os.getenv("CHAT_MODEL", "gemini-3.8-flash"))
+EMBEDDING_MODEL: str = os.getenv("GEMINI_EMBEDDING_MODEL", os.getenv("EMBEDDING_MODEL", "models/gemini-embedding-001"))
+CHAT_MODEL: str = os.getenv("GEMINI_MODEL", os.getenv("CHAT_MODEL", "gemini-3-flash-preview"))
 
 CHROMA_PERSIST_DIR: str = os.getenv(
     "CHROMA_PERSIST_DIR",

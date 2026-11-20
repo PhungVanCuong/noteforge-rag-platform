@@ -19,9 +19,9 @@ class GenerateStudySetJob implements ShouldQueue
 
     /**
      * The number of seconds the job can run before timing out.
-     * 1200 seconds = 20 minutes to prevent timeout on large documents.
+     * 3000 seconds = 50 minutes to eliminate any timeout on heavy multi-batch documents.
      */
-    public int $timeout = 1200;
+    public int $timeout = 3000;
 
     /**
      * Number of times to attempt this job.
@@ -85,13 +85,15 @@ class GenerateStudySetJob implements ShouldQueue
                 callbackUrl: $callbackUrl
             );
 
-            // Step 3: Validate generated output
+            // Step 3: Validate generated output across all 4 components
             $questions = $quizData['questions'] ?? [];
             $codeExercises = $quizData['code_exercises'] ?? [];
-            $categories = $quizData['categories'] ?? ['Tổng hợp'];
+            $shorts = $quizData['shorts'] ?? [];
+            $essays = $quizData['essays'] ?? [];
+            $categories = $quizData['categories'] ?? ['Tổng hợp kiến thức'];
 
-            if (empty($questions) && empty($codeExercises)) {
-                throw new Exception('AI không trích xuất được câu hỏi hoặc bài tập code nào từ tài liệu.');
+            if (empty($questions) && empty($codeExercises) && empty($shorts) && empty($essays)) {
+                throw new Exception('AI không trích xuất được nội dung câu hỏi, bài tập code hay tự luận nào từ tài liệu.');
             }
 
             // Step 4: Save completed study set
@@ -99,13 +101,15 @@ class GenerateStudySetJob implements ShouldQueue
                 'categories_json' => $categories,
                 'questions_json' => $questions,
                 'code_exercises_json' => $codeExercises,
+                'shorts_json' => $shorts,
+                'essays_json' => $essays,
                 'status' => 'completed',
                 'progress' => 100,
                 'status_message' => 'Hoàn tất! Bộ đề đã sẵn sàng.',
                 'error_message' => null,
             ]);
 
-            Log::info("GenerateStudySetJob SUCCESS for StudySet {$this->studySetId}: " . count($questions) . " questions, " . count($codeExercises) . " code exercises.");
+            Log::info("GenerateStudySetJob SUCCESS for StudySet {$this->studySetId}: " . count($questions) . " questions, " . count($codeExercises) . " code exercises, " . count($shorts) . " shorts, " . count($essays) . " essays.");
 
         } catch (\Throwable $e) {
             Log::error("GenerateStudySetJob FAILED for StudySet {$this->studySetId}: " . $e->getMessage(), [

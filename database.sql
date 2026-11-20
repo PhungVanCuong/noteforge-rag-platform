@@ -124,6 +124,8 @@ CREATE TABLE IF NOT EXISTS `study_sets` (
   `categories_json` JSON NOT NULL,
   `questions_json` JSON NOT NULL,
   `code_exercises_json` JSON NOT NULL,
+  `shorts_json` JSON NULL DEFAULT NULL,
+  `essays_json` JSON NULL DEFAULT NULL,
   `is_public` TINYINT(1) NOT NULL DEFAULT 1,
   `status` VARCHAR(30) NOT NULL DEFAULT 'completed',
   `progress` TINYINT UNSIGNED NOT NULL DEFAULT 100,

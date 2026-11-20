@@ -290,6 +290,91 @@
             background: var(--accent-amber);
             color: var(--primary-navy);
         }
+
+        /* Flashcard 3D Scene */
+        .flashcard-scene {
+            perspective: 1000px;
+            max-width: 580px;
+            margin: 20px auto;
+            height: 320px;
+            cursor: pointer;
+        }
+        .flashcard-card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15);
+        }
+        .flashcard-card.is-flipped {
+            transform: rotateY(180deg);
+        }
+        .flashcard-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 16px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-sizing: border-box;
+            border: 2px solid var(--paper-border);
+        }
+        .flashcard-front {
+            background: #FFFFFF;
+            color: var(--primary-navy);
+        }
+        .flashcard-back {
+            background: #ECFDF5;
+            color: #064E3B;
+            transform: rotateY(180deg);
+            border-color: #A7F3D0;
+        }
+
+        /* Theory Accordion */
+        .theory-item {
+            border: 1.5px solid var(--paper-border);
+            border-radius: 12px;
+            background: #FFFFFF;
+            margin-bottom: 12px;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+        .theory-header {
+            width: 100%;
+            padding: 16px 20px;
+            background: transparent;
+            border: none;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary-navy);
+        }
+        .theory-header:hover {
+            background: rgba(13, 46, 92, 0.04);
+        }
+        .theory-body {
+            display: none;
+            padding: 16px 20px;
+            background: #F8FAFC;
+            border-top: 1px solid var(--paper-border);
+            font-size: 13.5px;
+            line-height: 1.6;
+            color: #334155;
+            white-space: pre-line;
+        }
+        .theory-item.open .theory-body {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -300,9 +385,11 @@
         <span class="brand-tag">OFFLINE PLAYER</span>
     </div>
     <div class="mode-nav">
-        <button class="mode-btn active" onclick="switchMode('practice')">📝 Luyện trắc nghiệm</button>
-        <button class="mode-btn" onclick="switchMode('exam')">⏱️ Thi thử tính giờ</button>
-        <button class="mode-btn" onclick="switchMode('cloze')">💻 Điền khuyết Code</button>
+        <button class="mode-btn active" onclick="switchMode('practice')">📝 1. Luyện trắc nghiệm</button>
+        <button class="mode-btn" onclick="switchMode('exam')">⏱️ 2. Thi thử tính giờ</button>
+        <button class="mode-btn" onclick="switchMode('flashcard')">🃏 3. Thẻ Flashcards 3D</button>
+        <button class="mode-btn" onclick="switchMode('theory')">✍️ 4. Tự luận & Trả lời ngắn</button>
+        <button class="mode-btn" onclick="switchMode('cloze')">💻 5. Điền khuyết Code</button>
     </div>
 </header>
 
@@ -312,7 +399,7 @@
             <div>
                 <h1 style="font-size: 20px; color: var(--primary-navy);">{{ $studySet->title }}</h1>
                 <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
-                    Tổng số câu: <strong id="total-q-count">0</strong> &bull; Dữ liệu nén Offline độc lập
+                    Tổng số: <strong id="total-q-count">0</strong> câu hỏi &bull; Dữ liệu nén Offline độc lập
                 </p>
             </div>
             <div id="exam-timer-wrapper" style="display: none;">
@@ -348,7 +435,51 @@
             <div id="exam-result-banner" style="display: none; padding: 24px; text-align: center;"></div>
         </div>
 
-        <!-- Mode 3: Cloze Code -->
+        <!-- Mode 3: Flashcard 3D -->
+        <div id="view-flashcard" style="display: none; text-align: center; padding: 20px 10px;">
+            <div style="font-size: 13px; font-family: monospace; color: var(--text-muted); margin-bottom: 16px;" id="flashcard-counter">
+                Thẻ 1 / 1 (Nhấp để lật thẻ)
+            </div>
+            <div class="flashcard-scene" onclick="flipFlashcard()">
+                <div class="flashcard-card" id="flashcard-box">
+                    <div class="flashcard-face flashcard-front">
+                        <span style="font-size: 12px; font-weight: bold; color: var(--bg-grid); text-transform: uppercase;">Mặt trước: Câu hỏi</span>
+                        <p id="fc-front-text" style="font-size: 17px; font-weight: bold; line-height: 1.6;"></p>
+                        <span style="font-size: 11px; color: var(--text-muted);">Chạm để lật xem đáp án ↺</span>
+                    </div>
+                    <div class="flashcard-face flashcard-back">
+                        <span style="font-size: 12px; font-weight: bold; color: #065F46; text-transform: uppercase;">Mặt sau: Đáp án & Lời giải</span>
+                        <div>
+                            <div id="fc-back-ans" style="font-size: 17px; font-weight: bold; color: #064E3B; margin-bottom: 8px;"></div>
+                            <p id="fc-back-ex" style="font-size: 13px; color: #1F2937; line-height: 1.5;"></p>
+                        </div>
+                        <span style="font-size: 11px; color: #047857;">Chạm để quay lại câu hỏi ↻</span>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: center; gap: 12px; margin-top: 24px;">
+                <button class="action-btn" style="background: #E5E7EB; color: #1F2937;" onclick="prevFlashcard()">◀ Thẻ trước</button>
+                <button class="action-btn amber" onclick="flipFlashcard()">🔄 Lật mặt thẻ</button>
+                <button class="action-btn" onclick="nextFlashcard()">Thẻ tiếp theo ▶</button>
+            </div>
+        </div>
+
+        <!-- Mode 4: Theory & Shorts Accordion -->
+        <div id="view-theory" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--paper-border);">
+                <div>
+                    <h2 style="font-size: 17px; color: var(--primary-navy); margin-bottom: 4px;">Ngân hàng Tự luận & Câu hỏi ngắn</h2>
+                    <p style="font-size: 13px; color: var(--text-muted);">Nhấp vào từng câu để mở xem đáp án và dàn ý chi tiết.</p>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="action-btn" style="background: #E5E7EB; color: #1F2937; padding: 6px 12px; font-size: 12px;" onclick="toggleAllTheory(true)">Mở tất cả</button>
+                    <button class="action-btn" style="background: #E5E7EB; color: #1F2937; padding: 6px 12px; font-size: 12px;" onclick="toggleAllTheory(false)">Thu gọn</button>
+                </div>
+            </div>
+            <div id="theory-content-list"></div>
+        </div>
+
+        <!-- Mode 5: Cloze Code -->
         <div id="view-cloze" style="display: none;">
             <div id="cloze-exercises-list"></div>
         </div>
@@ -360,7 +491,9 @@
     const STUDY_DATA = {
         categories: {!! json_encode($studySet->categories_json ?? []) !!},
         questions: {!! json_encode($studySet->questions_json ?? []) !!},
-        code_exercises: {!! json_encode($studySet->code_exercises_json ?? []) !!}
+        code_exercises: {!! json_encode($studySet->code_exercises_json ?? []) !!},
+        shorts: {!! json_encode($studySet->shorts_json ?? []) !!},
+        essays: {!! json_encode($studySet->essays_json ?? []) !!}
     };
 
     let currentMode = 'practice';
@@ -387,17 +520,140 @@
             btn.classList.toggle('active', 
                 (mode === 'practice' && idx === 0) || 
                 (mode === 'exam' && idx === 1) || 
-                (mode === 'cloze' && idx === 2)
+                (mode === 'flashcard' && idx === 2) ||
+                (mode === 'theory' && idx === 3) ||
+                (mode === 'cloze' && idx === 4)
             );
         });
 
         document.getElementById('view-practice').style.display = mode === 'practice' ? 'block' : 'none';
         document.getElementById('view-exam').style.display = mode === 'exam' ? 'block' : 'none';
+        document.getElementById('view-flashcard').style.display = mode === 'flashcard' ? 'block' : 'none';
+        document.getElementById('view-theory').style.display = mode === 'theory' ? 'block' : 'none';
         document.getElementById('view-cloze').style.display = mode === 'cloze' ? 'block' : 'none';
         document.getElementById('exam-timer-wrapper').style.display = (mode === 'exam' && timerInterval) ? 'block' : 'none';
 
         if (mode === 'practice') renderPractice();
+        if (mode === 'flashcard') renderFlashcard();
+        if (mode === 'theory') renderTheory();
         if (mode === 'cloze') renderCloze();
+    }
+
+    // -------------------------------------------------------------
+    // FLASHCARD 3D MODE
+    // -------------------------------------------------------------
+    let fcIndex = 0;
+    let fcFlipped = false;
+
+    function renderFlashcard() {
+        const questions = STUDY_DATA.questions || [];
+        if (questions.length === 0) {
+            document.getElementById('fc-front-text').innerText = 'Không có câu hỏi nào để hiển thị thẻ ghi nhớ.';
+            document.getElementById('fc-back-ans').innerText = '';
+            document.getElementById('fc-back-ex').innerText = '';
+            return;
+        }
+
+        const q = questions[fcIndex];
+        document.getElementById('flashcard-counter').innerText = `Thẻ ${fcIndex + 1} / ${questions.length} (Nhấp thẻ để lật)`;
+        document.getElementById('fc-front-text').innerText = q.en || '';
+        document.getElementById('fc-back-ans').innerText = `✅ ${(q.opts && q.opts[q.ans]) ? q.opts[q.ans] : 'Đáp án chính xác'}`;
+        document.getElementById('fc-back-ex').innerText = q.ex || 'Đáp án theo đề cương nội bộ.';
+
+        // reset flip state
+        fcFlipped = false;
+        document.getElementById('flashcard-box').classList.remove('is-flipped');
+    }
+
+    function flipFlashcard() {
+        fcFlipped = !fcFlipped;
+        document.getElementById('flashcard-box').classList.toggle('is-flipped', fcFlipped);
+    }
+
+    function nextFlashcard() {
+        const questions = STUDY_DATA.questions || [];
+        if (fcIndex < questions.length - 1) {
+            fcIndex++;
+            renderFlashcard();
+        }
+    }
+
+    function prevFlashcard() {
+        if (fcIndex > 0) {
+            fcIndex--;
+            renderFlashcard();
+        }
+    }
+
+    // -------------------------------------------------------------
+    // THEORY & SHORTS MODE
+    // -------------------------------------------------------------
+    function renderTheory() {
+        const listDiv = document.getElementById('theory-content-list');
+        const shorts = STUDY_DATA.shorts || [];
+        const essays = STUDY_DATA.essays || [];
+
+        if (shorts.length === 0 && essays.length === 0) {
+            listDiv.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Không có câu hỏi ngắn hoặc bài tập tự luận trong tài liệu này.</div>';
+            return;
+        }
+
+        let html = '';
+
+        if (shorts.length > 0) {
+            html += `<h3 style="color: var(--primary-navy); margin-bottom: 12px; font-size: 15px;">Phần 1: Câu hỏi ngắn lý thuyết (${shorts.length} câu)</h3>`;
+            shorts.forEach((s, sIdx) => {
+                html += `
+                    <div class="theory-item" id="theory_s_${sIdx}">
+                        <button class="theory-header" onclick="toggleTheoryItem('theory_s_${sIdx}')">
+                            <span style="display:flex; align-items:flex-start; gap:10px;">
+                                <span style="background:var(--bg-grid); color:#FFF; font-family:monospace; padding:2px 8px; border-radius:4px; font-size:12px;">${s.id || ('S' + (sIdx+1))}</span>
+                                <span>${s.q}</span>
+                            </span>
+                            <span style="font-size:12px; color:var(--text-muted);">▼</span>
+                        </button>
+                        <div class="theory-body">
+                            <div style="font-weight:bold; color:#065F46; margin-bottom:6px;">💡 ĐÁP ÁN CHUẨN XÁC:</div>
+                            <div>${s.a}</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        if (essays.length > 0) {
+            html += `<h3 style="color: var(--primary-navy); margin-top: 24px; margin-bottom: 12px; font-size: 15px;">Phần 2: Bài tập tự luận & thực hành (${essays.length} bài)</h3>`;
+            essays.forEach((e, eIdx) => {
+                html += `
+                    <div class="theory-item" id="theory_e_${eIdx}">
+                        <button class="theory-header" onclick="toggleTheoryItem('theory_e_${eIdx}')">
+                            <span style="display:flex; align-items:flex-start; gap:10px;">
+                                <span style="background:var(--accent-amber); color:var(--primary-navy); font-family:monospace; padding:2px 8px; border-radius:4px; font-size:12px; font-weight:bold;">${e.id || ('E' + (eIdx+1))}</span>
+                                <span>${e.title}</span>
+                            </span>
+                            <span style="font-size:12px; color:var(--text-muted);">▼</span>
+                        </button>
+                        <div class="theory-body">
+                            <div style="font-weight:bold; color:#92400E; margin-bottom:6px;">📖 DÀN Ý & LỜI GIẢI CHI TIẾT:</div>
+                            <div style="background:#FFF; padding:12px; border-radius:6px; border:1px solid #E2E8F0;">${e.content}</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        listDiv.innerHTML = html;
+    }
+
+    function toggleTheoryItem(id) {
+        const item = document.getElementById(id);
+        if (item) item.classList.toggle('open');
+    }
+
+    function toggleAllTheory(open) {
+        document.querySelectorAll('.theory-item').forEach(el => {
+            el.classList.toggle('open', open);
+        });
     }
 
     // -------------------------------------------------------------

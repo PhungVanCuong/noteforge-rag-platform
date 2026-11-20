@@ -125,6 +125,9 @@
               <span class="text-gray-600">
                 <strong>{{ (set.questions_json || []).length }}</strong> câu &bull; 
                 <strong>{{ (set.code_exercises_json || []).length }}</strong> code
+                <span v-if="(set.shorts_json || []).length || (set.essays_json || []).length">
+                  &bull; <strong>{{ (set.shorts_json || []).length + (set.essays_json || []).length }}</strong> tự luận
+                </span>
               </span>
 
               <div class="flex items-center gap-1.5">
@@ -321,9 +324,12 @@
 
           <!-- File Upload Option -->
           <div>
-            <label class="block text-xs font-bold text-blueprint-dark mb-1">
-              Tải tệp đề cương / câu hỏi thô (Word .docx, PDF, TXT)
-            </label>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs font-bold text-blueprint-dark">
+                Tải tệp đề cương / câu hỏi thô (Word .docx, PDF, TXT)
+              </label>
+              <span class="text-[10px] text-gray-500 font-mono">Tối đa 10MB</span>
+            </div>
             <input
               type="file"
               @change="onGenFileSelected"
@@ -331,7 +337,7 @@
               class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blueprint file:text-white hover:file:bg-blueprint-light cursor-pointer"
             />
             <p v-if="genFile" class="text-[11px] text-emerald-700 font-mono mt-1 font-semibold">
-              ✓ Đã chọn: {{ genFile.name }}
+              ✓ Đã chọn: {{ genFile.name }} ({{ (genFile.size / (1024 * 1024)).toFixed(2) }} MB)
             </p>
           </div>
 
@@ -341,9 +347,16 @@
             <textarea
               v-model="genRawText"
               rows="5"
-              placeholder="Dán nội dung lý thuyết, ngân hàng câu hỏi hoặc đoạn code muốn đục lỗ [[từ_khóa]] vào đây..."
+              maxlength="100000"
+              placeholder="Dán nội dung lý thuyết, ngân hàng câu hỏi hoặc đoạn code muốn đục lỗ [[từ_khóa]] vào đây (tối đa 100,000 ký tự)..."
               class="w-full p-3 rounded-lg border border-gray-300 text-xs font-mono bg-white outline-none focus:ring-1 focus:ring-blueprint leading-relaxed"
             ></textarea>
+            <div class="flex justify-between items-center text-[11px] text-gray-500 font-mono mt-1 px-1">
+              <span>Hỗ trợ tối đa 100,000 ký tự</span>
+              <span :class="genRawText.length > 90000 ? 'text-amber-600 font-bold' : ''">
+                {{ genRawText.length.toLocaleString() }} / 100,000
+              </span>
+            </div>
           </div>
 
           <div class="flex justify-end gap-2 pt-2">
@@ -364,6 +377,29 @@
           </div>
         </form>
       </div>
+    </div>
+
+    <!-- Mini Floating Badge (Shown when modal is minimized during generation) -->
+    <div
+      v-if="generating && !showGenerateModal"
+      @click="showGenerateModal = true"
+      class="fixed bottom-6 right-6 z-50 cursor-pointer bg-blueprint-dark border-2 border-blueprint-accent text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 transition-transform hover:scale-105 active:scale-95 animate-fade-in"
+      title="Nhấp để mở lại tiến độ sinh đề AI"
+    >
+      <div class="relative flex items-center justify-center">
+        <span class="w-3.5 h-3.5 rounded-full bg-blueprint-accent animate-ping absolute"></span>
+        <span class="w-3 h-3 rounded-full bg-blueprint-accent relative"></span>
+      </div>
+      <div>
+        <div class="text-xs font-extrabold text-blueprint-accent flex items-center gap-1.5 font-mono">
+          <span>⚡ AI ĐANG CHẠY</span>
+          <span class="bg-blueprint px-1.5 py-0.2 rounded text-[11px] text-white">{{ genProgress }}%</span>
+        </div>
+        <div class="text-[11px] text-gray-300 max-w-[200px] truncate">
+          {{ displayStatusMessage }}
+        </div>
+      </div>
+      <span class="text-xs text-blueprint-accent font-bold ml-1">Mở ↗</span>
     </div>
   </div>
 </template>
@@ -440,7 +476,19 @@ const closeGenerateModal = () => {
 }
 
 const onGenFileSelected = (e) => {
-  genFile.value = e.target.files?.[0]
+  const file = e.target.files?.[0]
+  if (!file) {
+    genFile.value = null
+    return
+  }
+  const maxSize = 10 * 1024 * 1024 // 10MB
+  if (file.size > maxSize) {
+    alert(`Tệp "${file.name}" quá lớn (${(file.size / (1024 * 1024)).toFixed(1)} MB). Vui lòng chọn tệp dưới 10MB.`)
+    e.target.value = ''
+    genFile.value = null
+    return
+  }
+  genFile.value = file
 }
 
 const handleGenerateSet = async () => {
@@ -508,6 +556,7 @@ const startPolling = (studySetId) => {
         genStatusMessage.value = 'Hoàn tất! Đang đồng bộ vào hệ thống.'
         generating.value = false
         genFinished.value = true
+        showGenerateModal.value = true
         createdSuccessSet.value = statusData
 
         genTitle.value = ''
@@ -519,6 +568,7 @@ const startPolling = (studySetId) => {
       } else if (statusData.status === 'failed') {
         clearAllTimers()
         generating.value = false
+        showGenerateModal.value = true
         genError.value = statusData.error_message || 'Quá trình sinh bộ đề AI thất bại.'
       }
 

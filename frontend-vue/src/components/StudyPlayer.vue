@@ -54,7 +54,7 @@
         </div>
       </div>
 
-      <!-- Mode Switcher Tabs (4 Modes) -->
+      <!-- Mode Switcher Tabs (5 Modes) -->
       <div class="flex overflow-x-auto gap-2 mt-4 pt-1 no-scrollbar pb-1">
         <button
           @click="switchMode('practice')"
@@ -65,7 +65,7 @@
               : 'bg-white/80 hover:bg-white text-gray-700 border border-gray-200'
           ]"
         >
-          <span>📝</span> 1. Luyện trắc nghiệm
+          <span>📝</span> 1. Luyện trắc nghiệm ({{ allQuestions.length }})
         </button>
 
         <button
@@ -77,19 +77,7 @@
               : 'bg-white/80 hover:bg-white text-gray-700 border border-gray-200'
           ]"
         >
-          <span>⏱️</span> 2. Thi thử tính giờ
-        </button>
-
-        <button
-          @click="switchMode('cloze')"
-          :class="[
-            'px-4 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0',
-            activeMode === 'cloze'
-              ? 'bg-blueprint-dark text-blueprint-accent shadow-md'
-              : 'bg-white/80 hover:bg-white text-gray-700 border border-gray-200'
-          ]"
-        >
-          <span>💻</span> 3. Điền khuyết Code [[...]]
+          <span>⏱️</span> 2. Thi thử tính giờ (20 câu)
         </button>
 
         <button
@@ -101,7 +89,31 @@
               : 'bg-white/80 hover:bg-white text-gray-700 border border-gray-200'
           ]"
         >
-          <span>🃏</span> 4. Thẻ Flashcards 3D
+          <span>🃏</span> 3. Thẻ Flashcards 3D
+        </button>
+
+        <button
+          @click="switchMode('theory')"
+          :class="[
+            'px-4 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0',
+            activeMode === 'theory'
+              ? 'bg-blueprint-dark text-blueprint-accent shadow-md'
+              : 'bg-white/80 hover:bg-white text-gray-700 border border-gray-200'
+          ]"
+        >
+          <span>✍️</span> 4. Tự luận & Trả lời ngắn ({{ allShorts.length + allEssays.length }})
+        </button>
+
+        <button
+          @click="switchMode('cloze')"
+          :class="[
+            'px-4 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0',
+            activeMode === 'cloze'
+              ? 'bg-blueprint-dark text-blueprint-accent shadow-md'
+              : 'bg-white/80 hover:bg-white text-gray-700 border border-gray-200'
+          ]"
+        >
+          <span>💻</span> 5. Luyện gõ code [[...]] ({{ codeExercises.length }})
         </button>
       </div>
     </div>
@@ -488,6 +500,130 @@
       </div>
     </div>
 
+    <!-- =================================================================== -->
+    <!-- MODE 4: TỰ LUẬN & TRẢ LỜI NGẮN (SHORTS & ESSAYS ACCORDION) -->
+    <!-- =================================================================== -->
+    <div v-if="activeMode === 'theory'" class="blueprint-card p-4 sm:p-6 space-y-6">
+      <!-- Header Bar -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-blueprint-paperBorder/60">
+        <div>
+          <h2 class="text-base sm:text-lg font-extrabold text-blueprint-dark flex items-center gap-2">
+            <span>✍️</span> Ngân Hàng Câu Hỏi Ngắn & Tự Luận
+          </h2>
+          <p class="text-xs text-gray-600 mt-1">
+            Gồm <strong>{{ allShorts.length }} câu hỏi ngắn lý thuyết</strong> và <strong>{{ allEssays.length }} bài tự luận chuyên sâu</strong>. Đọc đề bài, suy nghĩ hoặc viết nháp rồi nhấp để mở đối chiếu đáp án mẫu.
+          </p>
+        </div>
+        <div class="flex items-center gap-2 self-start sm:self-center">
+          <button
+            @click="expandAllTheory"
+            class="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs transition-colors"
+          >
+            Mở tất cả
+          </button>
+          <button
+            @click="collapseAllTheory"
+            class="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs transition-colors"
+          >
+            Thu gọn
+          </button>
+        </div>
+      </div>
+
+      <!-- Fallback when empty -->
+      <div v-if="allShorts.length === 0 && allEssays.length === 0" class="py-12 text-center text-gray-500 text-xs">
+        Tài liệu này không chứa câu hỏi ngắn hoặc bài tập tự luận riêng biệt. Bạn có thể luyện trắc nghiệm hoặc bài tập code ở các tab trên!
+      </div>
+
+      <!-- Section 1: Shorts (30 câu ngắn lý thuyết) -->
+      <div v-if="allShorts.length > 0" class="space-y-3">
+        <div class="flex items-center gap-2 text-xs font-bold text-blueprint-dark">
+          <span class="px-2.5 py-0.5 rounded bg-blue-100 text-blueprint font-mono font-bold">PHẦN 1</span>
+          <span>CÂU HỎI NGẮN LÝ THUYẾT ({{ allShorts.length }} CÂU)</span>
+        </div>
+
+        <div
+          v-for="(s, sIdx) in allShorts"
+          :key="'short_' + sIdx"
+          class="border border-blueprint-paperBorder/80 rounded-xl overflow-hidden bg-white/80 shadow-sm transition-all"
+        >
+          <button
+            type="button"
+            @click="toggleShort(sIdx)"
+            class="w-full p-3.5 sm:p-4 text-left flex items-start justify-between gap-3 hover:bg-blueprint-paper/40 transition-colors"
+          >
+            <div class="flex items-start gap-3">
+              <span class="px-2 py-0.5 rounded bg-blueprint text-white font-mono font-bold text-[11px] shrink-0 mt-0.5">
+                {{ s.id || ('S' + (sIdx + 1)) }}
+              </span>
+              <span class="text-xs sm:text-sm font-semibold text-gray-900 leading-relaxed">
+                {{ s.q }}
+              </span>
+            </div>
+            <span class="text-gray-400 font-bold text-xs shrink-0 mt-1">
+              {{ expandedShorts[sIdx] ? '▲ Thu lại' : '▼ Mở đáp án' }}
+            </span>
+          </button>
+
+          <div
+            v-if="expandedShorts[sIdx]"
+            class="p-4 bg-emerald-50/70 border-t border-emerald-200/80 text-xs sm:text-sm text-gray-800 space-y-2 animate-fade-in"
+          >
+            <div class="font-bold text-emerald-800 flex items-center gap-1.5 text-xs font-mono">
+              <span>💡</span> ĐÁP ÁN CHUẨN XÁC:
+            </div>
+            <div class="leading-relaxed whitespace-pre-line text-emerald-950 font-medium pl-3 border-l-2 border-emerald-500">
+              {{ s.a }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Essays (3 bài tập tự luận lớn) -->
+      <div v-if="allEssays.length > 0" class="space-y-3 pt-4">
+        <div class="flex items-center gap-2 text-xs font-bold text-blueprint-dark">
+          <span class="px-2.5 py-0.5 rounded bg-amber-100 text-amber-900 font-mono font-bold">PHẦN 2</span>
+          <span>BÀI TẬP TỰ LUẬN CHUYÊN SÂU & TOÀN DIỆN ({{ allEssays.length }} BÀI)</span>
+        </div>
+
+        <div
+          v-for="(e, eIdx) in allEssays"
+          :key="'essay_' + eIdx"
+          class="border border-blueprint-paperBorder/80 rounded-xl overflow-hidden bg-white/80 shadow-sm transition-all"
+        >
+          <button
+            type="button"
+            @click="toggleEssay(eIdx)"
+            class="w-full p-3.5 sm:p-4 text-left flex items-start justify-between gap-3 hover:bg-blueprint-paper/40 transition-colors"
+          >
+            <div class="flex items-start gap-3">
+              <span class="px-2 py-0.5 rounded bg-amber-500 text-blueprint-dark font-mono font-black text-[11px] shrink-0 mt-0.5">
+                {{ e.id || ('E' + (eIdx + 1)) }}
+              </span>
+              <span class="text-xs sm:text-sm font-bold text-gray-900 leading-relaxed">
+                {{ e.title }}
+              </span>
+            </div>
+            <span class="text-gray-400 font-bold text-xs shrink-0 mt-1">
+              {{ expandedEssays[eIdx] ? '▲ Thu lại' : '▼ Mở dàn ý' }}
+            </span>
+          </button>
+
+          <div
+            v-if="expandedEssays[eIdx]"
+            class="p-4 bg-amber-50/50 border-t border-amber-200/80 text-xs sm:text-sm text-gray-800 space-y-2 animate-fade-in"
+          >
+            <div class="font-bold text-amber-900 flex items-center gap-1.5 text-xs font-mono">
+              <span>📖</span> DÀN Ý & LỜI GIẢI CHI TIẾT:
+            </div>
+            <div class="leading-relaxed whitespace-pre-line text-gray-900 font-sans pl-3 border-l-2 border-amber-500 bg-white/70 p-3.5 rounded-lg shadow-sm">
+              {{ e.content }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Question Palette Drawer Modal (for Exam Mode) -->
     <div
       v-if="showPaletteModal"
@@ -576,6 +712,34 @@ const shareCopied = ref(false)
 const categories = computed(() => props.studySet.categories_json || [])
 const allQuestions = computed(() => props.studySet.questions_json || [])
 const codeExercises = computed(() => props.studySet.code_exercises_json || [])
+const allShorts = computed(() => props.studySet.shorts_json || [])
+const allEssays = computed(() => props.studySet.essays_json || [])
+
+// Theory state
+const expandedShorts = ref({})
+const expandedEssays = ref({})
+
+const toggleShort = (idx) => {
+  expandedShorts.value[idx] = !expandedShorts.value[idx]
+}
+
+const toggleEssay = (idx) => {
+  expandedEssays.value[idx] = !expandedEssays.value[idx]
+}
+
+const expandAllTheory = () => {
+  allShorts.value.forEach((_, idx) => {
+    expandedShorts.value[idx] = true
+  })
+  allEssays.value.forEach((_, idx) => {
+    expandedEssays.value[idx] = true
+  })
+}
+
+const collapseAllTheory = () => {
+  expandedShorts.value = {}
+  expandedEssays.value = {}
+}
 
 // Practice state
 const practiceSelected = ref({})

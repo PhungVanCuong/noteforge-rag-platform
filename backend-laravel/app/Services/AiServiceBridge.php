@@ -142,10 +142,10 @@ class AiServiceBridge
             'callback_url' => $callbackUrl,
         ];
 
-        // 600s (10 minutes) timeout to eliminate Guzzle execution timeout
+        // 1800s (30 minutes) timeout to eliminate Guzzle execution timeout for heavy documents
         $response = Http::withHeaders($headers)
             ->connectTimeout(30)
-            ->timeout(600)
+            ->timeout(1800)
             ->post("{$this->baseUrl}/api/quiz/generate", $payload);
 
         // Fallback to system key if user key failed
@@ -154,7 +154,7 @@ class AiServiceBridge
             $payload['api_key'] = $this->systemApiKey;
             $response = Http::withHeaders(['X-Gemini-Api-Key' => $this->systemApiKey])
                 ->connectTimeout(30)
-                ->timeout(600)
+                ->timeout(1800)
                 ->post("{$this->baseUrl}/api/quiz/generate", $payload);
         }
 

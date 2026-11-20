@@ -176,6 +176,7 @@ def generate_quiz(payload: QuizGeneratePayload, x_gemini_api_key: Optional[str] 
             file_path=payload.file_path,
             raw_text=payload.raw_text,
             api_key=active_key,
+            study_set_id=payload.study_set_id,
             callback_url=payload.callback_url
         )
         return {"success": True, "data": result}

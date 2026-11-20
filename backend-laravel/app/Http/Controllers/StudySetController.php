@@ -144,10 +144,19 @@ class StudySetController extends Controller
                     $q->where('is_public', true);
                 }
             })
-            ->firstOrFail();
+            ->first();
+
+        if (!$studySet) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy bộ đề'
+            ], 404);
+        }
 
         $questions = $studySet->questions_json ?? [];
         $code = $studySet->code_exercises_json ?? [];
+        $shorts = $studySet->shorts_json ?? [];
+        $essays = $studySet->essays_json ?? [];
 
         return response()->json([
             'success' => true,
@@ -161,6 +170,8 @@ class StudySetController extends Controller
                 'error_message' => $studySet->error_message,
                 'questions_count' => count($questions),
                 'code_count' => count($code),
+                'shorts_count' => count($shorts),
+                'essays_count' => count($essays),
                 'categories' => $studySet->categories_json ?? [],
                 'created_at' => $studySet->created_at,
                 'updated_at' => $studySet->updated_at,
@@ -174,7 +185,7 @@ class StudySetController extends Controller
     public function updateProgressInternal(Request $request, $id)
     {
         $validated = $request->validate([
-            'progress' => 'required|integer|min:0|max:100',
+            'progress' => 'required|numeric|min:0|max:100',
             'status_message' => 'nullable|string|max:255',
             'status' => 'nullable|string|in:processing,completed,failed',
             'error_message' => 'nullable|string',
@@ -182,11 +193,15 @@ class StudySetController extends Controller
 
         $studySet = StudySet::find($id);
         if (!$studySet) {
-            return response()->json(['success' => false, 'message' => 'StudySet not found'], 404);
+            // Return 200 with notice instead of 404 to avoid throwing exception in AI client
+            return response()->json([
+                'success' => false,
+                'message' => "StudySet with ID {$id} not found or not initialized yet."
+            ], 200);
         }
 
         $updateData = [
-            'progress' => $validated['progress'],
+            'progress' => (int) $validated['progress'],
         ];
 
         if (!empty($validated['status_message'])) {

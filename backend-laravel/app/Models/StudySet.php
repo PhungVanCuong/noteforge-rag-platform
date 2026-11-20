@@ -18,6 +18,8 @@ class StudySet extends Model
         'categories_json',
         'questions_json',
         'code_exercises_json',
+        'shorts_json',
+        'essays_json',
         'is_public',
         'status',
         'progress',
@@ -29,6 +31,8 @@ class StudySet extends Model
         'categories_json' => 'array',
         'questions_json' => 'array',
         'code_exercises_json' => 'array',
+        'shorts_json' => 'array',
+        'essays_json' => 'array',
         'is_public' => 'boolean',
         'progress' => 'integer',
     ];

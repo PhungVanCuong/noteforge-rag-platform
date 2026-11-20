@@ -1,6 +1,7 @@
 import os
 import json
 import re
+import time
 import logging
 from typing import Any, Dict, List, Optional
 import google.generativeai as genai
@@ -12,20 +13,20 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 FALLBACK_CHAT_MODELS = [
-    "gemini-3.8-flash",
     "gemini-3-flash-preview",
-    "gemini-2.5-flash",
-    "gemini-2.0-flash",
+    "gemini-flash-lite-latest",
+    "gemini-3.8-flash",
+    "gemini-3.7-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash",
     "gemini-flash-latest",
-    "gemini-2.5-flash-lite",
-    "gemini-1.5-flash",
 ]
 
 FALLBACK_EMBEDDING_MODELS = [
-    "models/text-embedding-004",
-    "text-embedding-004",
-    "models/embedding-001",
     "models/gemini-embedding-001",
+    "gemini-embedding-001",
+    "models/gemini-embedding-2-preview",
+    "models/gemini-embedding-2",
 ]
 
 def clean_json_string(raw_text: str) -> Dict[str, Any]:
@@ -58,7 +59,7 @@ def generate_with_fallback(
 ) -> str:
     """
     Attempts to generate content using fallback chain of Gemini models.
-    Never crashes due to 404 model deprecation.
+    Handles 429 quota backoff and never crashes due to 404 model deprecation.
     """
     active_key = api_key or config.GEMINI_API_KEY
     if not active_key:
@@ -66,7 +67,7 @@ def generate_with_fallback(
 
     genai.configure(api_key=active_key)
 
-    preferred_model = os.getenv("GEMINI_MODEL", os.getenv("CHAT_MODEL", "gemini-3.8-flash"))
+    preferred_model = os.getenv("GEMINI_MODEL", os.getenv("CHAT_MODEL", "gemini-3-flash-preview"))
     models_to_try = [preferred_model] + [m for m in FALLBACK_CHAT_MODELS if m != preferred_model]
 
     last_error = None
@@ -83,9 +84,8 @@ def generate_with_fallback(
                 return response.text
         except Exception as e:
             err_msg = str(e)
-            logger.warning(f"Model {model_name} failed: {err_msg[:120]}. Trying next candidate...")
             last_error = e
-            # If not a model-not-found / deprecation error, and if quota exhausted, still try other model
+            logger.warning(f"Model {model_name} failed: {err_msg[:120]}. Trying next candidate...")
             continue
 
     # Fallback: Query live list of available models for this key
@@ -98,6 +98,7 @@ def generate_with_fallback(
         ]
         for live_model in available:
             try:
+                time.sleep(2)
                 model = genai.GenerativeModel(
                     model_name=live_model,
                     generation_config=generation_config,
