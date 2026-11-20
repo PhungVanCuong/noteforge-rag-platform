@@ -55,7 +55,7 @@
       </div>
 
       <!-- Mode Switcher Tabs (5 Modes) -->
-      <div class="flex overflow-x-auto gap-2 mt-4 pt-1 no-scrollbar pb-1">
+      <div v-drag-scroll class="flex overflow-x-auto gap-2 mt-4 pt-1 no-scrollbar pb-1 select-none">
         <button
           @click="switchMode('practice')"
           :class="[
@@ -123,7 +123,7 @@
     <!-- =================================================================== -->
     <div v-if="activeMode === 'practice'" class="blueprint-card p-4 sm:p-6">
       <!-- Category & Status Filter Chips (Horizontal Scroll on Mobile) -->
-      <div class="flex items-center gap-2 mb-6 pb-4 border-b border-blueprint-paperBorder/60 overflow-x-auto whitespace-nowrap no-scrollbar">
+      <div v-drag-scroll class="flex items-center gap-2 mb-6 pb-4 border-b border-blueprint-paperBorder/60 overflow-x-auto whitespace-nowrap no-scrollbar select-none">
         <button
           @click="setCategory('ALL')"
           :class="[

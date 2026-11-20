@@ -74,6 +74,21 @@
             background: rgba(255,255,255,0.08);
             padding: 4px;
             border-radius: 8px;
+            overflow-x: auto;
+            white-space: nowrap;
+            max-width: 100%;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            cursor: grab;
+            user-select: none;
+        }
+
+        .mode-nav::-webkit-scrollbar {
+            display: none;
+        }
+
+        .mode-nav.is-dragging {
+            cursor: grabbing !important;
         }
 
         .mode-btn {
@@ -86,6 +101,8 @@
             border-radius: 6px;
             cursor: pointer;
             transition: all 0.2s;
+            flex-shrink: 0;
+            white-space: nowrap;
         }
 
         .mode-btn.active {
@@ -123,9 +140,23 @@
 
         .filter-bar {
             display: flex;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
+            overflow-x: auto;
             gap: 8px;
             margin-bottom: 20px;
+            padding-bottom: 8px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            cursor: grab;
+            user-select: none;
+        }
+
+        .filter-bar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filter-bar.is-dragging {
+            cursor: grabbing !important;
         }
 
         .filter-chip {
@@ -133,6 +164,12 @@
             border: 1px solid var(--paper-border);
             padding: 6px 14px;
             border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: 500;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
             font-size: 13px;
             cursor: pointer;
             font-weight: 500;
@@ -675,6 +712,7 @@
             <button class="filter-chip danger ${filterWrongOnly ? 'active' : ''}" onclick="toggleWrongFilter()">❗ Đã làm sai (${wrongQuestionIds.size})</button>
         `;
         filtersDiv.innerHTML = chipsHtml;
+        initDragScroll(filtersDiv);
 
         // Render Questions
         const listDiv = document.getElementById('practice-questions-list');
@@ -923,7 +961,63 @@
         }
     }
 
+    // -------------------------------------------------------------
+    // DRAG-TO-SCROLL MOUSE MECHANISM
+    // -------------------------------------------------------------
+    function initDragScroll(elementOrSelector) {
+        const el = typeof elementOrSelector === 'string' ? document.querySelector(elementOrSelector) : elementOrSelector;
+        if (!el || el._hasDragScroll) return;
+        el._hasDragScroll = true;
+
+        let isDown = false;
+        let startX = 0;
+        let scrollLeft = 0;
+        let hasMoved = false;
+
+        el.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            if (el.scrollWidth <= el.clientWidth) return;
+            isDown = true;
+            hasMoved = false;
+            startX = e.pageX - el.offsetLeft;
+            scrollLeft = el.scrollLeft;
+            el.classList.add('is-dragging');
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            const x = e.pageX - el.offsetLeft;
+            const walk = (x - startX) * 1.3;
+            if (Math.abs(x - startX) > 5) {
+                hasMoved = true;
+            }
+            if (hasMoved) {
+                e.preventDefault();
+                el.scrollLeft = scrollLeft - walk;
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (!isDown) return;
+            isDown = false;
+            el.classList.remove('is-dragging');
+            if (hasMoved) {
+                const suppressClick = (clickEvent) => {
+                    clickEvent.preventDefault();
+                    clickEvent.stopPropagation();
+                    window.removeEventListener('click', suppressClick, true);
+                };
+                window.addEventListener('click', suppressClick, true);
+                setTimeout(() => {
+                    window.removeEventListener('click', suppressClick, true);
+                    hasMoved = false;
+                }, 80);
+            }
+        });
+    }
+
     // Initial render
+    initDragScroll('.mode-nav');
     renderPractice();
 </script>
 

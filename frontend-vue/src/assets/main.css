@@ -34,3 +34,21 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #FFB627;
 }
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Drag-to-scroll styles */
+.is-drag-scrolling {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+.is-drag-scrolling * {
+  user-select: none !important;
+}

@@ -35,6 +35,8 @@ ai-service-python/vector_db/
 ai-service-python/storage/
 backend-laravel/storage/app/public/conversions_temp/
 backend-laravel/storage/app/public/study_temp/
+backend-laravel/storage/app/public/avatars/*
+!backend-laravel/storage/app/public/avatars/.gitkeep
 backend-laravel/storage/framework/cache/*
 backend-laravel/storage/framework/sessions/*
 backend-laravel/storage/framework/views/*
